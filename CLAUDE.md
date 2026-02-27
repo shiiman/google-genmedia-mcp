@@ -42,6 +42,14 @@ API key override: `GENMEDIA_API_KEY` environment variable
 
 ### Config Structure
 
+The `prompt` section configures automatic prompt prefix (prepended to all generation prompts, not speech text):
+
+```yaml
+prompt:
+  prefix: ""        # Text prepended to all prompts (e.g., "日本語で出力。")
+  separator: "\n"   # Separator between prefix and prompt
+```
+
 The `tools` section in config.yaml manages per-tool defaults and model lists:
 
 ```yaml

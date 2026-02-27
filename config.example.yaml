@@ -25,6 +25,11 @@ server:
   port: 8000
   logLevel: "INFO"
 
+# ===== プロンプト =====
+prompt:
+  prefix: ""        # 全プロンプトの先頭に付与するテキスト（例: "日本語で出力。"）
+  separator: "\n"   # prefix とプロンプトの区切り文字
+
 # ===== ツール設定 =====
 tools:
   generateImage:

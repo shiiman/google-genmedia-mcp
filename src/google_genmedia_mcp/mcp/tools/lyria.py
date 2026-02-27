@@ -10,7 +10,7 @@ from typing import Any
 
 from ...core.errors import GenMediaError
 from ..server import mcp
-from ._utils import get_service
+from ._utils import apply_prompt_prefix, get_service
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,7 @@ def generate_music(
         生成結果（30 秒の WAV ファイルパスを含む辞書）
     """
     try:
+        prompt = apply_prompt_prefix(prompt)
         result = get_service().lyria.generate_music(
             prompt=prompt,
             model=model,

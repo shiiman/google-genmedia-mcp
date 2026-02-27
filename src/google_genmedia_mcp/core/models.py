@@ -61,6 +61,13 @@ class ServerConfig(BaseModel):
     log_level: str = Field(default="INFO", alias="logLevel")
 
 
+class PromptConfig(BaseModel):
+    """プロンプト設定."""
+
+    prefix: str = ""
+    separator: str = "\n"
+
+
 class ModelEntry(BaseModel):
     """モデルエントリー（ID とエイリアス）."""
 
@@ -375,6 +382,7 @@ class GenMediaConfig(BaseModel):
     output: OutputConfig = Field(default_factory=OutputConfig)
     gcs: GcsConfig = Field(default_factory=GcsConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
+    prompt: PromptConfig = Field(default_factory=PromptConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
 
 

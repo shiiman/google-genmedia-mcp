@@ -10,7 +10,7 @@ from typing import Any
 
 from ...core.errors import GenMediaError
 from ..server import mcp
-from ._utils import get_service
+from ._utils import apply_prompt_prefix, get_service
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ def edit_image(
         生成結果（編集済み画像ファイルパスを含む辞書）
     """
     try:
+        prompt = apply_prompt_prefix(prompt)
         tool_cfg = get_service().config.tools.edit_image
 
         # config のデフォルト値を適用（None のみフォールバック、falsy 値は維持）

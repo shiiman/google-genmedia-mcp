@@ -382,3 +382,151 @@ class TestCombineAudioVideoTool:
 
         assert "error" in result
         assert result["code"] == "FFMPEG_ERROR"
+
+
+# ===== apply_prompt_prefix ユーティリティ =====
+
+
+class TestApplyPromptPrefix:
+    """apply_prompt_prefix ユーティリティのテスト."""
+
+    def test_with_prefix(self) -> None:
+        """prefix 設定時にプロンプトが変換されることを検証."""
+        service_mock = _make_service_mock()
+        service_mock.config = GenMediaConfig.model_validate({
+            "prompt": {"prefix": "日本語で出力。"}
+        })
+        with patch(
+            "google_genmedia_mcp.mcp.tools._utils.get_service",
+            return_value=service_mock,
+        ):
+            from google_genmedia_mcp.mcp.tools._utils import apply_prompt_prefix
+
+            result = apply_prompt_prefix("テスト画像")
+
+        assert result == "日本語で出力。\nテスト画像"
+
+    def test_without_prefix(self) -> None:
+        """prefix 未設定時はそのまま返すことを検証."""
+        service_mock = _make_service_mock()
+        with patch(
+            "google_genmedia_mcp.mcp.tools._utils.get_service",
+            return_value=service_mock,
+        ):
+            from google_genmedia_mcp.mcp.tools._utils import apply_prompt_prefix
+
+            result = apply_prompt_prefix("テスト画像")
+
+        assert result == "テスト画像"
+
+    def test_custom_separator(self) -> None:
+        """カスタム separator が使用されることを検証."""
+        service_mock = _make_service_mock()
+        service_mock.config = GenMediaConfig.model_validate({
+            "prompt": {"prefix": "Prefix", "separator": " | "}
+        })
+        with patch(
+            "google_genmedia_mcp.mcp.tools._utils.get_service",
+            return_value=service_mock,
+        ):
+            from google_genmedia_mcp.mcp.tools._utils import apply_prompt_prefix
+
+            result = apply_prompt_prefix("test prompt")
+
+        assert result == "Prefix | test prompt"
+
+
+# ===== prompt prefix の MCP ツール統合テスト =====
+
+
+class TestPromptPrefixIntegration:
+    """prompt prefix が各ツールに適用されることを検証する統合テスト."""
+
+    def test_prefix_applied_to_generate_image(self) -> None:
+        """generate_image に promptPrefix が適用されることを検証."""
+        service_mock = _make_service_mock()
+        service_mock.config = GenMediaConfig.model_validate({
+            "prompt": {"prefix": "日本語で出力。"}
+        })
+        service_mock.gemini_image.generate.return_value = _make_gemini_result()
+
+        with patch(
+            "google_genmedia_mcp.mcp.tools._utils.get_service",
+            return_value=service_mock,
+        ), patch(
+            "google_genmedia_mcp.mcp.tools.image.get_service",
+            return_value=service_mock,
+        ):
+            from google_genmedia_mcp.mcp.tools.image import generate_image
+
+            generate_image(prompt="テスト画像")
+
+        call_args = service_mock.gemini_image.generate.call_args
+        assert call_args.kwargs["prompt"] == "日本語で出力。\nテスト画像"
+
+    def test_prefix_applied_to_generate_video(self) -> None:
+        """generate_video に promptPrefix が適用されることを検証."""
+        service_mock = _make_service_mock()
+        service_mock.config = GenMediaConfig.model_validate({
+            "prompt": {"prefix": "日本語で出力。"}
+        })
+        service_mock.veo.generate_from_text.return_value = _make_video_result()
+
+        with patch(
+            "google_genmedia_mcp.mcp.tools._utils.get_service",
+            return_value=service_mock,
+        ), patch(
+            "google_genmedia_mcp.mcp.tools.veo.get_service",
+            return_value=service_mock,
+        ):
+            from google_genmedia_mcp.mcp.tools.veo import generate_video
+
+            generate_video(prompt="テスト動画")
+
+        call_args = service_mock.veo.generate_from_text.call_args
+        assert call_args.kwargs["prompt"] == "日本語で出力。\nテスト動画"
+
+    def test_empty_prefix_no_change(self) -> None:
+        """prefix が空の場合は prompt が変更されないことを検証."""
+        service_mock = _make_service_mock()
+        service_mock.gemini_image.generate.return_value = _make_gemini_result()
+
+        with patch(
+            "google_genmedia_mcp.mcp.tools._utils.get_service",
+            return_value=service_mock,
+        ), patch(
+            "google_genmedia_mcp.mcp.tools.image.get_service",
+            return_value=service_mock,
+        ):
+            from google_genmedia_mcp.mcp.tools.image import generate_image
+
+            generate_image(prompt="テスト画像")
+
+        call_args = service_mock.gemini_image.generate.call_args
+        assert call_args.kwargs["prompt"] == "テスト画像"
+
+    def test_negative_prompt_not_affected(self) -> None:
+        """negative_prompt には prefix が適用されないことを検証."""
+        service_mock = _make_service_mock()
+        service_mock.config = GenMediaConfig.model_validate({
+            "prompt": {"prefix": "日本語で出力。"}
+        })
+        service_mock.imagen.generate.return_value = _make_imagen_result()
+
+        with patch(
+            "google_genmedia_mcp.mcp.tools._utils.get_service",
+            return_value=service_mock,
+        ), patch(
+            "google_genmedia_mcp.mcp.tools.image.get_service",
+            return_value=service_mock,
+        ):
+            from google_genmedia_mcp.mcp.tools.image import generate_image
+
+            generate_image(
+                prompt="テスト",
+                model="imagen-4.0-fast-generate-001",
+                negative_prompt="ぼやけた画像",
+            )
+
+        call_args = service_mock.imagen.generate.call_args
+        assert call_args.kwargs["negative_prompt"] == "ぼやけた画像"

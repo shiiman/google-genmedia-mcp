@@ -27,3 +27,22 @@ def reset_service() -> None:
     """グローバルサービスインスタンスをリセットする（テスト用）."""
     global _service
     _service = None
+
+
+def apply_prompt_prefix(prompt: str) -> str:
+    """config の prompt.prefix をプロンプトに適用する.
+
+    prefix が空文字列の場合は元のプロンプトをそのまま返す。
+
+    Args:
+        prompt: 元のプロンプト
+
+    Returns:
+        prefix が適用されたプロンプト
+    """
+    service = get_service()
+    prefix = service.config.prompt.prefix
+    if not prefix:
+        return prompt
+    separator = service.config.prompt.separator
+    return f"{prefix}{separator}{prompt}"

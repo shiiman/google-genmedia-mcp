@@ -99,6 +99,10 @@ def server_info() -> dict[str, Any]:
                 "has_cloud_credentials": has_cloud,
                 "gcs_enabled": config.gcs.enabled and has_cloud,
             },
+            "prompt": {
+                "prefix": config.prompt.prefix or "(未設定)",
+                "separator": repr(config.prompt.separator),
+            },
             "available_tools": available_tools,
             "unavailable_tools": unavailable_tools,
             "unavailable_reason": (

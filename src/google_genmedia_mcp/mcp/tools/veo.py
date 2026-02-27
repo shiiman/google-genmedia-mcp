@@ -10,7 +10,7 @@ from typing import Any
 
 from ...core.errors import GenMediaError
 from ..server import mcp
-from ._utils import get_service
+from ._utils import apply_prompt_prefix, get_service
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ def generate_video(
         生成結果（動画ファイルパスを含む辞書）
     """
     try:
+        prompt = apply_prompt_prefix(prompt)
         tool_cfg = get_service().config.tools.generate_video
 
         # config のデフォルト値を適用（None のみフォールバック、falsy 値は維持）
@@ -83,6 +84,7 @@ def generate_video_from_image(
         生成結果（動画ファイルパスを含む辞書）
     """
     try:
+        prompt = apply_prompt_prefix(prompt)
         tool_cfg = get_service().config.tools.generate_video_from_image
 
         # config のデフォルト値を適用（None のみフォールバック、falsy 値は維持）

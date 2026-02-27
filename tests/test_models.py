@@ -29,6 +29,8 @@ class TestGenMediaConfig:
         assert config.server.host == "127.0.0.1"
         assert config.server.port == 8000
         assert config.server.log_level == "INFO"
+        assert config.prompt.prefix == ""
+        assert config.prompt.separator == "\n"
 
     def test_model_defaults(self) -> None:
         """defaultModel のデフォルト値を検証."""
@@ -195,6 +197,32 @@ class TestGenerationResult:
         dumped = result.model_dump()
         assert isinstance(dumped, dict)
         assert dumped["model"] == "test-model"
+
+
+class TestPromptConfig:
+    """PromptConfig のテスト."""
+
+    def test_default_values(self) -> None:
+        """デフォルト値が正しく設定されることを検証."""
+        config = GenMediaConfig()
+        assert config.prompt.prefix == ""
+        assert config.prompt.separator == "\n"
+
+    def test_custom_prefix(self) -> None:
+        """カスタム prefix を設定できることを検証."""
+        config = GenMediaConfig.model_validate({
+            "prompt": {"prefix": "日本語で出力。"}
+        })
+        assert config.prompt.prefix == "日本語で出力。"
+        assert config.prompt.separator == "\n"
+
+    def test_custom_separator(self) -> None:
+        """カスタム separator を設定できることを検証."""
+        config = GenMediaConfig.model_validate({
+            "prompt": {"prefix": "test", "separator": " "}
+        })
+        assert config.prompt.prefix == "test"
+        assert config.prompt.separator == " "
 
 
 class TestToolsConfig:
