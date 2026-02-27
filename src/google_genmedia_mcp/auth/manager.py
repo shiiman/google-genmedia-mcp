@@ -96,8 +96,12 @@ class AuthManager:
             return None
 
         credentials = self._get_cloud_credentials(config)
+        client_options = {"quota_project_id": config.auth.vertex_ai.project}
         logger.debug("TTS クライアントを作成します")
-        return texttospeech.TextToSpeechClient(credentials=credentials)
+        return texttospeech.TextToSpeechClient(
+            credentials=credentials,
+            client_options=client_options,
+        )
 
     def create_aiplatform_client(self, config: GenMediaConfig) -> Any | None:
         """AI Platform クライアントを作成する.
@@ -120,7 +124,10 @@ class AuthManager:
 
         credentials = self._get_cloud_credentials(config)
         location = config.auth.vertex_ai.location
-        client_options = {"api_endpoint": f"{location}-aiplatform.googleapis.com"}
+        client_options = {
+            "api_endpoint": f"{location}-aiplatform.googleapis.com",
+            "quota_project_id": config.auth.vertex_ai.project,
+        }
         logger.debug("AI Platform クライアントを作成します")
         return aiplatform_v1.PredictionServiceClient(
             credentials=credentials,
