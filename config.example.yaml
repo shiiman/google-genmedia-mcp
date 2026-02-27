@@ -1,0 +1,97 @@
+# ===== 認証 =====
+auth:
+  method: "vertex_ai" # "api_key" | "vertex_ai" | "oauth"
+  apiKey: "" # API Key 方式用
+  vertexAi:
+    project: "your-project-id"
+    location: "us-central1"
+  oauth:
+    clientId: ""
+    clientSecret: ""
+
+# ===== 出力 =====
+output:
+  directory: ".google-genmedia-mcp/output"
+
+# ===== GCS (Vertex AI 方式のみ) =====
+gcs:
+  enabled: false
+  bucket: "your-bucket-name"
+
+# ===== サーバー =====
+server:
+  transport: "stdio"
+  host: "127.0.0.1"
+  port: 8000
+  logLevel: "INFO"
+
+# ===== モデル定義 =====
+models:
+  imagen:
+    default: "imagen-4.0-fast-generate-001"
+    available:
+      - id: "imagen-4.0-ultra-generate-001"
+        aliases: ["Imagen 4 Ultra", "imagen-4.0-ultra"]
+      - id: "imagen-4.0-generate-001"
+        aliases: ["Imagen 4", "imagen-4.0"]
+      - id: "imagen-4.0-fast-generate-001"
+        aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
+
+  gemini:
+    default: "gemini-3.1-flash-image-preview"
+    allowUnregistered: true
+    available:
+      - id: "gemini-3.1-flash-image-preview"
+        aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
+      - id: "gemini-3-pro-image-preview"
+        aliases: ["Nano Banana Pro", "gemini-3-pro-image"]
+      - id: "gemini-2.5-flash-image"
+        aliases: ["Nano Banana", "gemini-2.5-flash-preview-image-generation"]
+
+  veo:
+    default: "veo-3.1-generate-preview"
+    available:
+      - id: "veo-3.1-generate-preview"
+        aliases: ["Veo 3.1", "veo-3.1", "veo-3.1-generate-001"]
+      - id: "veo-3.1-fast-generate-preview"
+        aliases: ["Veo 3.1 Fast", "veo-3.1-fast", "veo-3.1-fast-generate-001"]
+      - id: "veo-3.0-generate-preview"
+        aliases: ["Veo 3", "veo-3.0", "veo-3.0-generate-001"]
+      - id: "veo-3.0-fast-generate-preview"
+        aliases: ["Veo 3 Fast", "veo-3.0-fast", "veo-3.0-fast-generate-001"]
+      - id: "veo-2.0-generate-001"
+        aliases: ["Veo 2", "veo-2.0"]
+
+  lyria:
+    default: "lyria-002"
+    available:
+      - id: "lyria-002"
+        aliases: ["Lyria 2", "lyria2"]
+
+# ===== Chirp TTS ボイス設定 =====
+chirp:
+  defaultVoice: "Kore"
+  defaultLanguage: "ja-JP"
+  # ボイス一覧 (8 種)
+  voices:
+    - name: "Aoede"
+      gender: "female"
+    - name: "Kore"
+      gender: "female"
+    - name: "Leda"
+      gender: "female"
+    - name: "Zephyr"
+      gender: "female"
+    - name: "Puck"
+      gender: "male"
+    - name: "Charon"
+      gender: "male"
+    - name: "Fenrir"
+      gender: "male"
+    - name: "Orus"
+      gender: "male"
+
+# ===== Veo ポーリング =====
+veo:
+  pollInterval: 15
+  pollTimeout: 600
