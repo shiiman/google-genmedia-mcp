@@ -12,6 +12,7 @@ from google_genmedia_mcp.core.models import (
     GenMediaConfig,
     ModelEntry,
     ToolsConfig,
+    get_veo_constraints,
 )
 
 
@@ -46,8 +47,8 @@ class TestGenMediaConfig:
         config = GenMediaConfig()
         assert len(config.tools.generate_image.models) == 6  # Imagen 3 + Gemini 3
         assert len(config.tools.edit_image.models) == 3  # Imagen のみ
-        assert len(config.tools.generate_video.models) == 5
-        assert len(config.tools.generate_video_from_image.models) == 5
+        assert len(config.tools.generate_video.models) == 9
+        assert len(config.tools.generate_video_from_image.models) == 9
         assert len(config.tools.generate_music.models) == 1
         # generateImage は allowUnregistered=True がデフォルト
         assert config.tools.generate_image.allow_unregistered is True
@@ -238,10 +239,12 @@ class TestToolsConfig:
         assert config.tools.edit_image.edit_mode == "inpaint_insertion"
         assert config.tools.edit_image.number_of_images == 1
         assert config.tools.generate_video.aspect_ratio == "16:9"
-        assert config.tools.generate_video.duration_seconds == 5
+        assert config.tools.generate_video.duration_seconds == 8
         assert config.tools.generate_video.number_of_videos == 1
+        assert config.tools.generate_video.generate_audio is None
         assert config.tools.generate_video_from_image.aspect_ratio == "16:9"
-        assert config.tools.generate_video_from_image.duration_seconds == 5
+        assert config.tools.generate_video_from_image.duration_seconds == 8
+        assert config.tools.generate_video_from_image.generate_audio is None
         assert config.tools.generate_speech.voice is None
         assert config.tools.generate_speech.language is None
         assert config.tools.generate_speech.audio_encoding == "mp3"
@@ -251,8 +254,8 @@ class TestToolsConfig:
         config = GenMediaConfig()
         assert len(config.tools.generate_image.models) == 6
         assert len(config.tools.edit_image.models) == 3  # Imagen のみ
-        assert len(config.tools.generate_video.models) == 5
-        assert len(config.tools.generate_video_from_image.models) == 5
+        assert len(config.tools.generate_video.models) == 9
+        assert len(config.tools.generate_video_from_image.models) == 9
         assert len(config.tools.generate_music.models) == 1
 
     def test_yaml_alias_with_default_model(self) -> None:
@@ -323,3 +326,71 @@ class TestToolsConfig:
         })
         assert tc.generate_video.polling.poll_interval == 30
         assert tc.generate_video.polling.poll_timeout == 1200
+
+
+class TestGetVeoConstraints:
+    """get_veo_constraints() のテスト."""
+
+    def test_veo_2_model(self) -> None:
+        """Veo 2 モデルの制約を取得できることを検証."""
+        c = get_veo_constraints("veo-2.0-generate-001")
+        assert c is not None
+        assert c.supports_audio is False
+        assert c.max_videos == 4
+        assert 5 in c.valid_durations
+
+    def test_veo_3_model(self) -> None:
+        """Veo 3 モデルの制約を取得できることを検証."""
+        c = get_veo_constraints("veo-3.0-generate-preview")
+        assert c is not None
+        assert c.supports_audio is True
+        assert c.max_videos == 2
+        assert "16:9" in c.valid_aspect_ratios
+        assert "9:16" not in c.valid_aspect_ratios
+
+    def test_veo_31_model(self) -> None:
+        """Veo 3.1 モデルの制約を取得できることを検証."""
+        c = get_veo_constraints("veo-3.1-generate-preview")
+        assert c is not None
+        assert c.supports_audio is True
+        assert "9:16" in c.valid_aspect_ratios
+
+    def test_veo_31_preferred_over_30(self) -> None:
+        """veo-3.1 が veo-3.0 より優先的にマッチすることを検証."""
+        c31 = get_veo_constraints("veo-3.1-fast-generate-preview")
+        c30 = get_veo_constraints("veo-3.0-fast-generate-preview")
+        assert c31 is not None
+        assert c30 is not None
+        # veo-3.1 は 9:16 対応、veo-3.0 は非対応
+        assert "9:16" in c31.valid_aspect_ratios
+        assert "9:16" not in c30.valid_aspect_ratios
+
+    def test_unknown_model_returns_none(self) -> None:
+        """未知モデルで None が返ることを検証."""
+        assert get_veo_constraints("unknown-model") is None
+
+
+class TestModelEntryGlobalFlag:
+    """ModelEntry の global フラグのテスト."""
+
+    def test_default_global_is_false(self) -> None:
+        """global フラグのデフォルトが False であることを検証."""
+        entry = ModelEntry(id="test-model")
+        assert entry.global_ is False
+
+    def test_global_from_yaml_alias(self) -> None:
+        """YAML の 'global' エイリアスで設定できることを検証."""
+        entry = ModelEntry.model_validate({"id": "test-model", "global": True})
+        assert entry.global_ is True
+
+    def test_is_global_model(self) -> None:
+        """GenerateImageToolConfig.is_global_model() を検証."""
+        config = GenMediaConfig()
+        tool_cfg = config.tools.generate_image
+        # Gemini 3.x モデルは global=True
+        assert tool_cfg.is_global_model("gemini-3.1-flash-image-preview") is True
+        assert tool_cfg.is_global_model("gemini-3-pro-image-preview") is True
+        # Imagen モデルは global=False
+        assert tool_cfg.is_global_model("imagen-4.0-fast-generate-001") is False
+        # 未登録モデルは False
+        assert tool_cfg.is_global_model("unknown-model") is False

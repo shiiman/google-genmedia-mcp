@@ -71,8 +71,11 @@ class PromptConfig(BaseModel):
 class ModelEntry(BaseModel):
     """モデルエントリー（ID とエイリアス）."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     id: str
     aliases: list[str] = []
+    global_: bool = Field(default=False, alias="global")
 
 
 class ChirpVoice(BaseModel):
@@ -89,6 +92,49 @@ class VeoPollingConfig(BaseModel):
 
     poll_interval: int = Field(default=15, alias="pollInterval")
     poll_timeout: int = Field(default=600, alias="pollTimeout")
+
+
+class VeoModelConstraints(BaseModel):
+    """Veo モデル固有の制約."""
+
+    valid_durations: list[int]
+    max_videos: int
+    valid_aspect_ratios: list[str]
+    supports_audio: bool
+
+
+VEO_MODEL_CONSTRAINTS: dict[str, VeoModelConstraints] = {
+    "veo-2.0": VeoModelConstraints(
+        valid_durations=[5, 6, 7, 8],
+        max_videos=4,
+        valid_aspect_ratios=["16:9", "9:16"],
+        supports_audio=False,
+    ),
+    "veo-3.0": VeoModelConstraints(
+        valid_durations=[4, 6, 8],
+        max_videos=2,
+        valid_aspect_ratios=["16:9"],
+        supports_audio=True,
+    ),
+    "veo-3.1": VeoModelConstraints(
+        valid_durations=[4, 6, 8],
+        max_videos=2,
+        valid_aspect_ratios=["16:9", "9:16"],
+        supports_audio=True,
+    ),
+}
+
+
+def get_veo_constraints(model_id: str) -> VeoModelConstraints | None:
+    """モデル ID からプレフィックスベースで Veo 制約を取得する.
+
+    長いプレフィックスから順にマッチさせることで、
+    "veo-3.1" が "veo-3.0" より優先的にマッチする。
+    """
+    for prefix in sorted(VEO_MODEL_CONSTRAINTS, key=len, reverse=True):
+        if model_id.startswith(prefix):
+            return VEO_MODEL_CONSTRAINTS[prefix]
+    return None
 
 
 # ===== モデル解決ユーティリティ =====
@@ -157,10 +203,12 @@ def _default_image_models() -> list[ModelEntry]:
         ModelEntry(
             id="gemini-3.1-flash-image-preview",
             aliases=["Nano Banana 2", "gemini-3.1-flash-image"],
+            global_=True,  # type: ignore[call-arg]
         ),
         ModelEntry(
             id="gemini-3-pro-image-preview",
             aliases=["Nano Banana Pro", "gemini-3-pro-image"],
+            global_=True,  # type: ignore[call-arg]
         ),
         ModelEntry(
             id="gemini-2.5-flash-image",
@@ -182,15 +230,31 @@ def _default_veo_models() -> list[ModelEntry]:
         ),
         ModelEntry(
             id="veo-3.0-generate-preview",
-            aliases=["Veo 3", "veo-3.0", "veo-3.0-generate-001"],
+            aliases=["Veo 3", "veo-3.0"],
+        ),
+        ModelEntry(
+            id="veo-3.0-generate-001",
+            aliases=["veo-3.0-generate"],
         ),
         ModelEntry(
             id="veo-3.0-fast-generate-preview",
-            aliases=["Veo 3 Fast", "veo-3.0-fast", "veo-3.0-fast-generate-001"],
+            aliases=["Veo 3 Fast", "veo-3.0-fast"],
+        ),
+        ModelEntry(
+            id="veo-3.0-fast-generate-001",
+            aliases=["veo-3.0-fast-generate"],
         ),
         ModelEntry(
             id="veo-2.0-generate-001",
             aliases=["Veo 2", "veo-2.0"],
+        ),
+        ModelEntry(
+            id="veo-2.0-generate-exp",
+            aliases=["Veo 2 Exp", "veo-2.0-exp"],
+        ),
+        ModelEntry(
+            id="veo-2.0-generate-preview",
+            aliases=["Veo 2 Preview", "veo-2.0-preview"],
         ),
     ]
 
@@ -241,6 +305,13 @@ class GenerateImageToolConfig(BaseModel):
             self.allow_unregistered, category_name,
         )
 
+    def is_global_model(self, model_id: str) -> bool:
+        """解決済みモデル ID がグローバルエンドポイントを使うか判定する."""
+        for entry in self.models:
+            if entry.id == model_id:
+                return entry.global_
+        return False
+
 
 def _default_imagen_edit_models() -> list[ModelEntry]:
     """画像編集用 Imagen モデルのデフォルト定義."""
@@ -285,8 +356,9 @@ class GenerateVideoToolConfig(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     aspect_ratio: str = Field(default="16:9", alias="aspectRatio")
-    duration_seconds: int = Field(default=5, alias="durationSeconds")
+    duration_seconds: int = Field(default=8, alias="durationSeconds")
     number_of_videos: int = Field(default=1, alias="numberOfVideos")
+    generate_audio: bool | None = Field(default=None, alias="generateAudio")
     default_model: str = Field(default="Veo 3.1", alias="defaultModel")
     models: list[ModelEntry] = Field(default_factory=_default_veo_models)
     polling: VeoPollingConfig = Field(default_factory=VeoPollingConfig)
@@ -305,7 +377,8 @@ class GenerateVideoFromImageToolConfig(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     aspect_ratio: str = Field(default="16:9", alias="aspectRatio")
-    duration_seconds: int = Field(default=5, alias="durationSeconds")
+    duration_seconds: int = Field(default=8, alias="durationSeconds")
+    generate_audio: bool | None = Field(default=None, alias="generateAudio")
     default_model: str = Field(default="Veo 3.1", alias="defaultModel")
     models: list[ModelEntry] = Field(default_factory=_default_veo_models)
     polling: VeoPollingConfig = Field(default_factory=VeoPollingConfig)

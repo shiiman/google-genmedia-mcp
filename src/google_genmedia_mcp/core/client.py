@@ -22,6 +22,7 @@ class GenMediaClient:
     def __init__(self, config: GenMediaConfig) -> None:
         self._config = config
         self._genai_client: Any | None = None
+        self._genai_global_client: Any | None = None
         self._tts_client: Any | None = None
         self._aiplatform_client: Any | None = None
         self._auth_manager_instance: Any | None = None
@@ -40,6 +41,13 @@ class GenMediaClient:
         if self._genai_client is None:
             self._genai_client = self._auth_manager.create_genai_client(self._config)
         return self._genai_client
+
+    @property
+    def genai_global(self) -> Any:
+        """グローバルエンドポイント用 genai クライアント（遅延初期化）."""
+        if self._genai_global_client is None:
+            self._genai_global_client = self._auth_manager.create_genai_client_global(self._config)
+        return self._genai_global_client
 
     @property
     def tts(self) -> Any | None:

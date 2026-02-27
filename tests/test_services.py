@@ -14,6 +14,7 @@ from google_genmedia_mcp.core.errors import (
 )
 from google_genmedia_mcp.core.models import (
     GenMediaConfig,
+    get_veo_constraints,
 )
 from google_genmedia_mcp.services.avtool import AvToolService
 from google_genmedia_mcp.services.chirp import ChirpService
@@ -377,6 +378,220 @@ class TestVeoServiceGenerate:
             prompt="テスト", image_gcs_uri="gs://bucket/image.jpg"
         )
         assert len(result.videos) == 1
+
+
+class TestVeoServiceValidateParams:
+    """VeoService._validate_params() のモデル固有制約テスト."""
+
+    def test_unknown_model_allows_any_params(self) -> None:
+        """未知モデル（constraints=None）では最低限のバリデーションのみ."""
+        # constraints=None でも duration_seconds >= 1, number_of_videos >= 1 は必要
+        VeoService._validate_params("unknown-model", None, "16:9", 10, 5)
+
+    def test_unknown_model_rejects_zero_videos(self) -> None:
+        """未知モデルでも number_of_videos < 1 はエラー."""
+        with pytest.raises(GenerationError) as exc_info:
+            VeoService._validate_params("unknown-model", None, "16:9", 8, 0)
+        assert "INVALID_PARAMETER" in str(exc_info.value.debug_code)
+
+    def test_unknown_model_rejects_zero_duration(self) -> None:
+        """未知モデルでも duration_seconds < 1 はエラー."""
+        with pytest.raises(GenerationError) as exc_info:
+            VeoService._validate_params("unknown-model", None, "16:9", 0)
+        assert "INVALID_PARAMETER" in str(exc_info.value.debug_code)
+
+    def test_veo2_invalid_aspect_ratio(self) -> None:
+        """Veo 2 で不正なアスペクト比がエラーになることを検証."""
+        constraints = get_veo_constraints("veo-2.0-generate-001")
+        with pytest.raises(GenerationError) as exc_info:
+            VeoService._validate_params("veo-2.0-generate-001", constraints, "4:3", 8)
+        assert "INVALID_PARAMETER" in str(exc_info.value.debug_code)
+        assert "アスペクト比" in str(exc_info.value)
+
+    def test_veo3_invalid_aspect_ratio(self) -> None:
+        """Veo 3 では 9:16 がサポートされないことを検証."""
+        constraints = get_veo_constraints("veo-3.0-generate-preview")
+        with pytest.raises(GenerationError):
+            VeoService._validate_params("veo-3.0-generate-preview", constraints, "9:16", 8)
+
+    def test_veo31_allows_both_aspect_ratios(self) -> None:
+        """Veo 3.1 は 16:9 と 9:16 の両方を許可することを検証."""
+        constraints = get_veo_constraints("veo-3.1-generate-preview")
+        VeoService._validate_params("veo-3.1-generate-preview", constraints, "16:9", 8)
+        VeoService._validate_params("veo-3.1-generate-preview", constraints, "9:16", 8)
+
+    def test_veo2_invalid_duration(self) -> None:
+        """Veo 2 で不正な duration がエラーになることを検証."""
+        constraints = get_veo_constraints("veo-2.0-generate-001")
+        with pytest.raises(GenerationError) as exc_info:
+            VeoService._validate_params("veo-2.0-generate-001", constraints, "16:9", 4)
+        assert "動画長" in str(exc_info.value)
+
+    def test_veo3_invalid_duration(self) -> None:
+        """Veo 3 で不正な duration（5 秒）がエラーになることを検証."""
+        constraints = get_veo_constraints("veo-3.0-generate-preview")
+        with pytest.raises(GenerationError):
+            VeoService._validate_params("veo-3.0-generate-preview", constraints, "16:9", 5)
+
+    def test_veo2_exceeds_max_videos(self) -> None:
+        """Veo 2 で max_videos を超えるとエラーになることを検証."""
+        constraints = get_veo_constraints("veo-2.0-generate-001")
+        with pytest.raises(GenerationError) as exc_info:
+            VeoService._validate_params("veo-2.0-generate-001", constraints, "16:9", 8, 5)
+        assert "最大" in str(exc_info.value)
+
+    def test_veo3_exceeds_max_videos(self) -> None:
+        """Veo 3 で max_videos(2) を超えるとエラーになることを検証."""
+        constraints = get_veo_constraints("veo-3.0-generate-preview")
+        with pytest.raises(GenerationError):
+            VeoService._validate_params("veo-3.0-generate-preview", constraints, "16:9", 8, 3)
+
+    def test_veo2_valid_params(self) -> None:
+        """Veo 2 の有効なパラメータが通ることを検証."""
+        constraints = get_veo_constraints("veo-2.0-generate-001")
+        VeoService._validate_params("veo-2.0-generate-001", constraints, "16:9", 8, 4)
+        VeoService._validate_params("veo-2.0-generate-001", constraints, "9:16", 5, 1)
+
+
+class TestVeoServiceBuildConfig:
+    """VeoService._build_config() のテスト."""
+
+    def setup_method(self) -> None:
+        self.config = _make_config()
+        self.client_mock = MagicMock()
+        self.storage_mock = MagicMock()
+        self.service = VeoService(self.client_mock, self.config, self.storage_mock)
+
+    def test_veo2_no_generate_audio(self) -> None:
+        """Veo 2（supports_audio=False）では generate_audio が含まれないことを検証."""
+        constraints = get_veo_constraints("veo-2.0-generate-001")
+        result = self.service._build_config(
+            aspect_ratio="16:9",
+            duration_seconds=8,
+            constraints=constraints,
+            generate_audio=None,
+        )
+        assert "generate_audio" not in result
+
+    def test_veo2_ignores_explicit_generate_audio_true(self) -> None:
+        """Veo 2 で generate_audio=True を指定しても含まれないことを検証."""
+        constraints = get_veo_constraints("veo-2.0-generate-001")
+        result = self.service._build_config(
+            aspect_ratio="16:9",
+            duration_seconds=8,
+            constraints=constraints,
+            generate_audio=True,
+        )
+        assert "generate_audio" not in result
+
+    def test_veo2_ignores_explicit_generate_audio_false(self) -> None:
+        """Veo 2 で generate_audio=False を指定しても含まれないことを検証."""
+        constraints = get_veo_constraints("veo-2.0-generate-001")
+        result = self.service._build_config(
+            aspect_ratio="16:9",
+            duration_seconds=8,
+            constraints=constraints,
+            generate_audio=False,
+        )
+        assert "generate_audio" not in result
+
+    def test_veo3_defaults_generate_audio_true(self) -> None:
+        """Veo 3（supports_audio=True）でデフォルト generate_audio=True になることを検証."""
+        constraints = get_veo_constraints("veo-3.0-generate-preview")
+        result = self.service._build_config(
+            aspect_ratio="16:9",
+            duration_seconds=8,
+            constraints=constraints,
+        )
+        assert result["generate_audio"] is True
+
+    def test_veo3_explicit_generate_audio_false(self) -> None:
+        """Veo 3 で generate_audio=False を明示指定できることを検証."""
+        constraints = get_veo_constraints("veo-3.0-generate-preview")
+        result = self.service._build_config(
+            aspect_ratio="16:9",
+            duration_seconds=8,
+            constraints=constraints,
+            generate_audio=False,
+        )
+        assert result["generate_audio"] is False
+
+    def test_unknown_model_explicit_generate_audio(self) -> None:
+        """未知モデル（constraints=None）で明示指定した generate_audio が含まれることを検証."""
+        result = self.service._build_config(
+            aspect_ratio="16:9",
+            duration_seconds=8,
+            constraints=None,
+            generate_audio=True,
+        )
+        assert result["generate_audio"] is True
+
+    def test_unknown_model_no_generate_audio(self) -> None:
+        """未知モデル（constraints=None）で generate_audio=None のとき含まれないことを検証."""
+        result = self.service._build_config(
+            aspect_ratio="16:9",
+            duration_seconds=8,
+            constraints=None,
+        )
+        assert "generate_audio" not in result
+
+    def test_number_of_videos_included(self) -> None:
+        """number_of_videos が config に含まれることを検証."""
+        result = self.service._build_config(
+            aspect_ratio="16:9",
+            duration_seconds=8,
+            constraints=None,
+            number_of_videos=3,
+        )
+        assert result["number_of_videos"] == 3
+
+    def test_number_of_videos_none_excluded(self) -> None:
+        """number_of_videos=None のとき config に含まれないことを検証."""
+        result = self.service._build_config(
+            aspect_ratio="16:9",
+            duration_seconds=8,
+            constraints=None,
+        )
+        assert "number_of_videos" not in result
+
+
+class TestVeoServiceBuildOutputGcsUri:
+    """VeoService._build_output_gcs_uri() のテスト."""
+
+    def test_gcs_disabled(self) -> None:
+        """GCS 無効時に None を返すことを検証."""
+        config = _make_config()
+        service = VeoService(MagicMock(), config, MagicMock())
+        assert service._build_output_gcs_uri() is None
+
+    def test_gcs_enabled_no_bucket(self) -> None:
+        """GCS 有効でもバケット未設定なら None を返すことを検証."""
+        config = _make_config()
+        config.gcs.enabled = True
+        config.gcs.bucket = ""
+        service = VeoService(MagicMock(), config, MagicMock())
+        assert service._build_output_gcs_uri() is None
+
+    def test_gcs_enabled_with_bucket(self) -> None:
+        """GCS 有効 + バケット設定済みで URI を返すことを検証."""
+        config = _make_config()
+        config.gcs.enabled = True
+        config.gcs.bucket = "my-bucket"
+        service = VeoService(MagicMock(), config, MagicMock())
+        assert service._build_output_gcs_uri() == "gs://my-bucket/veo_outputs/"
+
+    def test_gcs_uri_included_in_build_config(self) -> None:
+        """GCS 有効時に _build_config の結果に output_gcs_uri が含まれることを検証."""
+        config = _make_config()
+        config.gcs.enabled = True
+        config.gcs.bucket = "test-bucket"
+        service = VeoService(MagicMock(), config, MagicMock())
+        result = service._build_config(
+            aspect_ratio="16:9",
+            duration_seconds=8,
+            constraints=None,
+        )
+        assert result["output_gcs_uri"] == "gs://test-bucket/veo_outputs/"
 
 
 # ===== LyriaService =====

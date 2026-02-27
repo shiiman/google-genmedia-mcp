@@ -11,7 +11,14 @@ from typing import Any
 
 from ..core.client import GenMediaClient
 from ..core.errors import GenerationError
-from ..core.models import GeneratedVideo, GenerationResult, GenMediaConfig, VeoPollingConfig
+from ..core.models import (
+    GeneratedVideo,
+    GenerationResult,
+    GenMediaConfig,
+    VeoModelConstraints,
+    VeoPollingConfig,
+    get_veo_constraints,
+)
 from .storage import StorageService
 
 logger = logging.getLogger(__name__)
@@ -43,8 +50,9 @@ class VeoService:
         prompt: str,
         model: str | None = None,
         aspect_ratio: str = "16:9",
-        duration_seconds: int = 5,
+        duration_seconds: int = 8,
         number_of_videos: int = 1,
+        generate_audio: bool | None = None,
     ) -> GenerationResult:
         """テキストから動画を生成する.
 
@@ -54,24 +62,29 @@ class VeoService:
             aspect_ratio: アスペクト比（16:9 / 9:16）
             duration_seconds: 動画の長さ（秒）
             number_of_videos: 生成本数
+            generate_audio: 音声付き動画を生成するか（Veo 3+ のみ）
 
         Returns:
             生成結果
         """
-        self._validate_params(aspect_ratio, duration_seconds)
         resolved_model = self.resolve_model(model)
+        constraints = get_veo_constraints(resolved_model)
+        self._validate_params(resolved_model, constraints, aspect_ratio, duration_seconds, number_of_videos)
         polling_cfg = self._config.tools.generate_video.polling
         logger.info(f"Veo でテキストから動画生成を開始します (model={resolved_model})")
 
         try:
+            config_dict = self._build_config(
+                aspect_ratio=aspect_ratio,
+                duration_seconds=duration_seconds,
+                number_of_videos=number_of_videos,
+                generate_audio=generate_audio,
+                constraints=constraints,
+            )
             operation = self._client.genai.models.generate_videos(
                 model=resolved_model,
                 prompt=prompt,
-                config={
-                    "aspect_ratio": aspect_ratio,
-                    "duration_seconds": duration_seconds,
-                    "number_of_videos": number_of_videos,
-                },
+                config=config_dict,
             )
             operation = self._poll_operation(operation, polling_cfg)
         except GenerationError:
@@ -90,7 +103,8 @@ class VeoService:
         image_gcs_uri: str,
         model: str | None = None,
         aspect_ratio: str = "16:9",
-        duration_seconds: int = 5,
+        duration_seconds: int = 8,
+        generate_audio: bool | None = None,
     ) -> GenerationResult:
         """画像から動画を生成する.
 
@@ -100,6 +114,7 @@ class VeoService:
             model: モデル名またはエイリアス
             aspect_ratio: アスペクト比
             duration_seconds: 動画の長さ（秒）
+            generate_audio: 音声付き動画を生成するか（Veo 3+ のみ）
 
         Returns:
             生成結果
@@ -112,20 +127,24 @@ class VeoService:
                 "INVALID_GCS_URI",
                 hint="gs://bucket/path/image.jpg 形式で指定してください",
             )
-        self._validate_params(aspect_ratio, duration_seconds)
         resolved_model = self.resolve_model_i2v(model)
+        constraints = get_veo_constraints(resolved_model)
+        self._validate_params(resolved_model, constraints, aspect_ratio, duration_seconds)
         polling_cfg = self._config.tools.generate_video_from_image.polling
         logger.info(f"Veo で画像から動画生成を開始します (model={resolved_model})")
 
         try:
+            config_dict = self._build_config(
+                aspect_ratio=aspect_ratio,
+                duration_seconds=duration_seconds,
+                generate_audio=generate_audio,
+                constraints=constraints,
+            )
             operation = self._client.genai.models.generate_videos(
                 model=resolved_model,
                 prompt=prompt,
                 image=types.Image(gcs_uri=image_gcs_uri),
-                config={
-                    "aspect_ratio": aspect_ratio,
-                    "duration_seconds": duration_seconds,
-                },
+                config=config_dict,
             )
             operation = self._poll_operation(operation, polling_cfg)
         except GenerationError:
@@ -139,20 +158,87 @@ class VeoService:
         return self._build_result(operation, resolved_model, duration_seconds, prefix="veo_i2v")
 
     @staticmethod
-    def _validate_params(aspect_ratio: str, duration_seconds: int) -> None:
-        """パラメータを検証する."""
-        valid_aspect_ratios = {"16:9", "9:16"}
-        if aspect_ratio not in valid_aspect_ratios:
+    def _validate_params(
+        model_id: str,
+        constraints: VeoModelConstraints | None,
+        aspect_ratio: str,
+        duration_seconds: int,
+        number_of_videos: int = 1,
+    ) -> None:
+        """モデル固有の制約に基づいてパラメータを検証する."""
+        # 制約の有無に関わらず最低限のバリデーション
+        if number_of_videos < 1:
             raise GenerationError(
-                f"無効なアスペクト比です: {aspect_ratio}",
+                f"number_of_videos は 1 以上で指定してください: {number_of_videos}",
                 "INVALID_PARAMETER",
-                hint=f"利用可能なアスペクト比: {sorted(valid_aspect_ratios)}",
             )
-        if not 5 <= duration_seconds <= 8:
+        if duration_seconds < 1:
             raise GenerationError(
-                f"duration_seconds は 5〜8 の範囲で指定してください: {duration_seconds}",
+                f"duration_seconds は 1 以上で指定してください: {duration_seconds}",
                 "INVALID_PARAMETER",
             )
+
+        if constraints is None:
+            return
+
+        if aspect_ratio not in constraints.valid_aspect_ratios:
+            raise GenerationError(
+                f"モデル {model_id} では無効なアスペクト比です: {aspect_ratio}",
+                "INVALID_PARAMETER",
+                hint=f"利用可能なアスペクト比: {constraints.valid_aspect_ratios}",
+            )
+        if duration_seconds not in constraints.valid_durations:
+            raise GenerationError(
+                f"モデル {model_id} では無効な動画長です: {duration_seconds}秒",
+                "INVALID_PARAMETER",
+                hint=f"利用可能な動画長（秒）: {constraints.valid_durations}",
+            )
+        if number_of_videos > constraints.max_videos:
+            raise GenerationError(
+                f"モデル {model_id} では最大 {constraints.max_videos} 本まで生成可能です: {number_of_videos}",
+                "INVALID_PARAMETER",
+            )
+
+    def _build_config(
+        self,
+        aspect_ratio: str,
+        duration_seconds: int,
+        constraints: VeoModelConstraints | None,
+        number_of_videos: int | None = None,
+        generate_audio: bool | None = None,
+    ) -> dict[str, Any]:
+        """Veo API 用の config dict を構築する."""
+        config_dict: dict[str, Any] = {
+            "aspect_ratio": aspect_ratio,
+            "duration_seconds": duration_seconds,
+        }
+        if number_of_videos is not None:
+            config_dict["number_of_videos"] = number_of_videos
+
+        # generate_audio の解決: 音声非対応モデルには送らない
+        if constraints and not constraints.supports_audio:
+            if generate_audio:
+                logger.warning("このモデルは音声生成をサポートしていません。generate_audio を無視します")
+            # supports_audio=False のモデルには generate_audio を一切送らない
+        elif generate_audio is not None:
+            config_dict["generate_audio"] = generate_audio
+        elif constraints and constraints.supports_audio:
+            # Veo 3+ のデフォルト: True
+            config_dict["generate_audio"] = True
+
+        # GCS 出力先
+        output_gcs_uri = self._build_output_gcs_uri()
+        if output_gcs_uri:
+            config_dict["output_gcs_uri"] = output_gcs_uri
+
+        return config_dict
+
+    def _build_output_gcs_uri(self) -> str | None:
+        """GCS 出力先 URI を構築する."""
+        gcs = self._config.gcs
+        if not gcs.enabled or not gcs.bucket:
+            return None
+        return f"gs://{gcs.bucket}/veo_outputs/"
 
     def _poll_operation(self, operation: Any, polling: VeoPollingConfig | None = None) -> Any:
         """操作が完了するまでポーリングする."""

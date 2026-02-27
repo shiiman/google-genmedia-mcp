@@ -6,6 +6,7 @@ Gemini モデルを使用した画像生成・編集を提供する。
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from ..core.client import GenMediaClient
 from ..core.errors import GenerationError
@@ -34,6 +35,13 @@ class GeminiImageService:
         allowUnregistered が True の場合は未登録モデルも許可する。
         """
         return self._config.tools.generate_image.resolve_model(model, "Gemini 画像モデル")
+
+    def _get_genai_client(self, model_id: str) -> Any:
+        """config の global フラグに基づいて genai クライアントを返す."""
+        tool_cfg = self._config.tools.generate_image
+        if tool_cfg.is_global_model(model_id):
+            return self._client.genai_global
+        return self._client.genai
 
     def generate(
         self,
@@ -78,7 +86,8 @@ class GeminiImageService:
             if aspect_ratio:
                 config_params["image_config"] = types.ImageConfig(aspect_ratio=aspect_ratio)
 
-            response = self._client.genai.models.generate_content(
+            client = self._get_genai_client(resolved_model)
+            response = client.models.generate_content(
                 model=resolved_model,
                 contents=contents,
                 config=types.GenerateContentConfig(**config_params),  # type: ignore[arg-type]

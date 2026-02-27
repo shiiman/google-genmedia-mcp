@@ -14,6 +14,7 @@ output:
   directory: ".google-genmedia-mcp/output"
 
 # ===== GCS (Vertex AI 方式のみ) =====
+# Veo 動画生成には enabled: true を推奨（output_gcs_uri として使用）
 gcs:
   enabled: false
   bucket: "your-bucket-name"
@@ -46,8 +47,10 @@ tools:
         aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
       - id: "gemini-3.1-flash-image-preview"
         aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
+        global: true  # Vertex AI ではグローバルエンドポイントが必要
       - id: "gemini-3-pro-image-preview"
         aliases: ["Nano Banana Pro", "gemini-3-pro-image"]
+        global: true  # Vertex AI ではグローバルエンドポイントが必要
       - id: "gemini-2.5-flash-image"
         aliases: ["Nano Banana", "gemini-2.5-flash-preview-image-generation"]
 
@@ -66,8 +69,9 @@ tools:
 
   generateVideo:
     aspectRatio: "16:9"
-    durationSeconds: 5
+    durationSeconds: 8
     numberOfVideos: 1
+    generateAudio: null  # null = モデルに応じて自動（Veo 3+ は True、Veo 2 は無効）
     defaultModel: "Veo 3.1"
     models:
       - id: "veo-3.1-generate-preview"
@@ -75,11 +79,19 @@ tools:
       - id: "veo-3.1-fast-generate-preview"
         aliases: ["Veo 3.1 Fast", "veo-3.1-fast", "veo-3.1-fast-generate-001"]
       - id: "veo-3.0-generate-preview"
-        aliases: ["Veo 3", "veo-3.0", "veo-3.0-generate-001"]
+        aliases: ["Veo 3", "veo-3.0"]
+      - id: "veo-3.0-generate-001"
+        aliases: ["veo-3.0-generate"]
       - id: "veo-3.0-fast-generate-preview"
-        aliases: ["Veo 3 Fast", "veo-3.0-fast", "veo-3.0-fast-generate-001"]
+        aliases: ["Veo 3 Fast", "veo-3.0-fast"]
+      - id: "veo-3.0-fast-generate-001"
+        aliases: ["veo-3.0-fast-generate"]
       - id: "veo-2.0-generate-001"
         aliases: ["Veo 2", "veo-2.0"]
+      - id: "veo-2.0-generate-exp"
+        aliases: ["Veo 2 Exp", "veo-2.0-exp"]
+      - id: "veo-2.0-generate-preview"
+        aliases: ["Veo 2 Preview", "veo-2.0-preview"]
     polling:
       pollInterval: 15
       pollTimeout: 600
@@ -87,7 +99,8 @@ tools:
   # generateVideo と同じ Veo モデルを使用（T2V / I2V でモデル・ポーリング設定を個別管理可能）
   generateVideoFromImage:
     aspectRatio: "16:9"
-    durationSeconds: 5
+    durationSeconds: 8
+    generateAudio: null  # null = モデルに応じて自動（Veo 3+ は True、Veo 2 は無効）
     defaultModel: "Veo 3.1"
     models:
       - id: "veo-3.1-generate-preview"
@@ -95,11 +108,19 @@ tools:
       - id: "veo-3.1-fast-generate-preview"
         aliases: ["Veo 3.1 Fast", "veo-3.1-fast", "veo-3.1-fast-generate-001"]
       - id: "veo-3.0-generate-preview"
-        aliases: ["Veo 3", "veo-3.0", "veo-3.0-generate-001"]
+        aliases: ["Veo 3", "veo-3.0"]
+      - id: "veo-3.0-generate-001"
+        aliases: ["veo-3.0-generate"]
       - id: "veo-3.0-fast-generate-preview"
-        aliases: ["Veo 3 Fast", "veo-3.0-fast", "veo-3.0-fast-generate-001"]
+        aliases: ["Veo 3 Fast", "veo-3.0-fast"]
+      - id: "veo-3.0-fast-generate-001"
+        aliases: ["veo-3.0-fast-generate"]
       - id: "veo-2.0-generate-001"
         aliases: ["Veo 2", "veo-2.0"]
+      - id: "veo-2.0-generate-exp"
+        aliases: ["Veo 2 Exp", "veo-2.0-exp"]
+      - id: "veo-2.0-generate-preview"
+        aliases: ["Veo 2 Preview", "veo-2.0-preview"]
     polling:
       pollInterval: 15
       pollTimeout: 600

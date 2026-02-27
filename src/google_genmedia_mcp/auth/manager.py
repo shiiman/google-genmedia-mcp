@@ -31,9 +31,32 @@ class AuthManager:
         Raises:
             AuthError: 認証設定が不完全な場合
         """
+        return self._create_genai_client(config)
+
+    def create_genai_client_global(self, config: GenMediaConfig) -> Any:
+        """グローバルエンドポイント用 genai クライアントを作成する.
+
+        Vertex AI の場合 location="global" で作成。
+        API Key / OAuth の場合は通常クライアントと同じ（location 不要）。
+        """
+        return self._create_genai_client(config, location_override="global")
+
+    def _create_genai_client(
+        self,
+        config: GenMediaConfig,
+        location_override: str | None = None,
+    ) -> Any:
+        """genai クライアント作成の共通実装.
+
+        Args:
+            config: GenMedia 設定
+            location_override: Vertex AI の location を上書きする値（"global" 等）
+        """
         from google import genai
 
         from ..core.errors import AuthError
+
+        label = "グローバル " if location_override else ""
 
         match config.auth.method:
             case "api_key":
@@ -43,7 +66,7 @@ class AuthManager:
                         "AUTH_NO_API_KEY",
                         hint="config.yaml の auth.apiKey を設定するか、GENMEDIA_API_KEY 環境変数を設定してください",
                     )
-                logger.debug("API Key 方式で genai クライアントを作成します")
+                logger.debug(f"API Key 方式で{label}genai クライアントを作成します")
                 return genai.Client(api_key=config.auth.api_key)
 
             case "vertex_ai":
@@ -53,23 +76,23 @@ class AuthManager:
                         "AUTH_NO_PROJECT",
                         hint="config.yaml の auth.vertexAi.project を設定してください",
                     )
+                location = location_override or config.auth.vertex_ai.location
                 logger.debug(
-                    f"Vertex AI 方式で genai クライアントを作成します "
-                    f"(project={config.auth.vertex_ai.project})"
+                    f"Vertex AI 方式で{label}genai クライアントを作成します "
+                    f"(project={config.auth.vertex_ai.project}, location={location})"
                 )
                 return genai.Client(
                     vertexai=True,
                     project=config.auth.vertex_ai.project,
-                    location=config.auth.vertex_ai.location,
+                    location=location,
                 )
 
             case "oauth":
                 credentials = self._load_oauth_credentials(config)
-                logger.debug("OAuth 方式で genai クライアントを作成します")
+                logger.debug(f"OAuth 方式で{label}genai クライアントを作成します")
                 return genai.Client(credentials=credentials)
 
             case _:
-                from ..core.errors import AuthError
                 raise AuthError(
                     f"未知の認証方式: {config.auth.method}",
                     "AUTH_UNKNOWN_METHOD",
