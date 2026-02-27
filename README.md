@@ -17,7 +17,38 @@ Python + FastMCP + hatchling で実装。`uvx` でワンコマンドインスト
 
 ## インストール
 
-### Claude Code / Cursor / Cline への設定
+GitHub から直接インストールできます（リポジトリの clone は不要）。
+
+### CLI で追加
+
+通常運用では `--reinstall` なしを推奨します。
+追加コマンドは次の「設定の追加・削除（再インストールとは別）」を参照してください。
+
+### 設定の追加・削除（再インストールとは別）
+
+**Claude**
+
+```bash
+# 追加（--reinstall なし）
+claude mcp add --scope user google-genmedia-mcp -- uvx --from git+https://github.com/shiiman/google-genmedia-mcp google-genmedia-mcp
+
+# 削除
+claude mcp remove google-genmedia-mcp
+```
+
+**Codex**
+
+```bash
+# 追加（--reinstall なし）
+codex mcp add google-genmedia-mcp -- uvx --from git+https://github.com/shiiman/google-genmedia-mcp google-genmedia-mcp
+
+# 削除
+codex mcp remove google-genmedia-mcp
+```
+
+### 設定ファイルに直接記述
+
+**グローバル設定** (`~/.claude.json`):
 
 ```json
 {
@@ -25,16 +56,63 @@ Python + FastMCP + hatchling で実装。`uvx` でワンコマンドインスト
     "google-genmedia-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/shiiman/google-genmedia-mcp", "google-genmedia-mcp"]
+      "args": [
+        "--from", "git+https://github.com/shiiman/google-genmedia-mcp",
+        "google-genmedia-mcp"
+      ]
     }
   }
 }
 ```
 
-### 更新
+**プロジェクト設定** (`.mcp.json` をプロジェクトルートに作成):
+
+```json
+{
+  "mcpServers": {
+    "google-genmedia-mcp": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from", "git+https://github.com/shiiman/google-genmedia-mcp",
+        "google-genmedia-mcp"
+      ]
+    }
+  }
+}
+```
+
+### 自動更新について
+
+`--reinstall` オプションを付けると、起動時に毎回 GitHub から最新版を再インストールします。
+
+> **Note**: `--refresh` オプションでは Git リポジトリのキャッシュが効いたままになり、更新が反映されないことがあります。確実に最新版を使用するには `--reinstall` を推奨します。
+
+`--reinstall` なし運用で更新したい場合は、次の「必要なときだけ再インストールする手順」を実行してください。
+
+**必要なときだけ再インストールする手順（Claude/Codex 共通）**:
 
 ```bash
-uvx --from git+https://github.com/shiiman/google-genmedia-mcp google-genmedia-mcp
+# 1) 1回だけ再インストール（通常運用では毎回不要）
+uv tool install --force --from git+https://github.com/shiiman/google-genmedia-mcp google-genmedia-mcp
+
+# 2) 使用中のクライアントを再起動して MCP を再接続
+# - Claude を使っている場合: Claude を再起動
+# - Codex を使っている場合: Codex を再起動
+
+# 3) 反映確認（使用クライアントに応じて実行）
+claude mcp list
+codex mcp get google-genmedia-mcp
+
+# 4) 反映されない場合のみキャッシュクリア
+uv cache clean google-genmedia-mcp
+```
+
+### 設定の確認
+
+```bash
+claude mcp list
+codex mcp list
 ```
 
 ---
