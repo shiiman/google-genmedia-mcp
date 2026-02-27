@@ -31,7 +31,7 @@ class AuthConfig(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    method: str = "api_key"  # "api_key" | "vertex_ai" | "oauth"
+    method: str = "vertex_ai"  # "api_key" | "vertex_ai" | "oauth"
     api_key: str = Field(default="", alias="apiKey")
     vertex_ai: VertexAiConfig = Field(default_factory=VertexAiConfig, alias="vertexAi")
     oauth: OAuthConfig = Field(default_factory=OAuthConfig)
@@ -95,6 +95,10 @@ class ModelCategory(BaseModel):
         if model is None:
             return self.default
 
+        # デフォルトモデルは常に許可
+        if model == self.default:
+            return self.default
+
         for entry in self.available:
             if entry.id == model or model in entry.aliases:
                 return entry.id
@@ -105,7 +109,8 @@ class ModelCategory(BaseModel):
         raise ModelNotFoundError(
             f"{category_name}が見つかりません: {model}",
             "MODEL_NOT_FOUND",
-            hint=f"利用可能なモデル: {[e.id for e in self.available]}",
+            hint=f"利用可能なモデル: {[e.id for e in self.available]}"
+            + (f" (デフォルト: {self.default})" if self.default else ""),
         )
 
 
@@ -113,18 +118,81 @@ class ModelsConfig(BaseModel):
     """モデル設定."""
 
     imagen: ModelCategory = Field(
-        default_factory=lambda: ModelCategory(default="imagen-4.0-fast-generate-001")
+        default_factory=lambda: ModelCategory(
+            default="imagen-4.0-fast-generate-001",
+            available=[
+                ModelEntry(
+                    id="imagen-4.0-ultra-generate-001",
+                    aliases=["Imagen 4 Ultra", "imagen-4.0-ultra"],
+                ),
+                ModelEntry(
+                    id="imagen-4.0-generate-001",
+                    aliases=["Imagen 4", "imagen-4.0"],
+                ),
+                ModelEntry(
+                    id="imagen-4.0-fast-generate-001",
+                    aliases=["Imagen 4 Fast", "imagen-4.0-fast"],
+                ),
+            ],
+        )
     )
     gemini: ModelCategory = Field(
         default_factory=lambda: ModelCategory(
-            default="gemini-3.1-flash-image-preview"
+            default="gemini-3.1-flash-image-preview",
+            allowUnregistered=True,
+            available=[
+                ModelEntry(
+                    id="gemini-3.1-flash-image-preview",
+                    aliases=["Nano Banana 2", "gemini-3.1-flash-image"],
+                ),
+                ModelEntry(
+                    id="gemini-3-pro-image-preview",
+                    aliases=["Nano Banana Pro", "gemini-3-pro-image"],
+                ),
+                ModelEntry(
+                    id="gemini-2.5-flash-image",
+                    aliases=["Nano Banana", "gemini-2.5-flash-preview-image-generation"],
+                ),
+            ],
         )
     )
     veo: ModelCategory = Field(
-        default_factory=lambda: ModelCategory(default="veo-3.1-generate-preview")
+        default_factory=lambda: ModelCategory(
+            default="veo-3.1-generate-preview",
+            available=[
+                ModelEntry(
+                    id="veo-3.1-generate-preview",
+                    aliases=["Veo 3.1", "veo-3.1", "veo-3.1-generate-001"],
+                ),
+                ModelEntry(
+                    id="veo-3.1-fast-generate-preview",
+                    aliases=["Veo 3.1 Fast", "veo-3.1-fast", "veo-3.1-fast-generate-001"],
+                ),
+                ModelEntry(
+                    id="veo-3.0-generate-preview",
+                    aliases=["Veo 3", "veo-3.0", "veo-3.0-generate-001"],
+                ),
+                ModelEntry(
+                    id="veo-3.0-fast-generate-preview",
+                    aliases=["Veo 3 Fast", "veo-3.0-fast", "veo-3.0-fast-generate-001"],
+                ),
+                ModelEntry(
+                    id="veo-2.0-generate-001",
+                    aliases=["Veo 2", "veo-2.0"],
+                ),
+            ],
+        )
     )
     lyria: ModelCategory = Field(
-        default_factory=lambda: ModelCategory(default="lyria-002")
+        default_factory=lambda: ModelCategory(
+            default="lyria-002",
+            available=[
+                ModelEntry(
+                    id="lyria-002",
+                    aliases=["Lyria 2", "lyria2"],
+                ),
+            ],
+        )
     )
 
 
@@ -142,7 +210,18 @@ class ChirpConfig(BaseModel):
 
     default_voice: str = Field(default="Kore", alias="defaultVoice")
     default_language: str = Field(default="ja-JP", alias="defaultLanguage")
-    voices: list[ChirpVoice] = []
+    voices: list[ChirpVoice] = Field(
+        default_factory=lambda: [
+            ChirpVoice(name="Aoede", gender="female"),
+            ChirpVoice(name="Kore", gender="female"),
+            ChirpVoice(name="Leda", gender="female"),
+            ChirpVoice(name="Zephyr", gender="female"),
+            ChirpVoice(name="Puck", gender="male"),
+            ChirpVoice(name="Charon", gender="male"),
+            ChirpVoice(name="Fenrir", gender="male"),
+            ChirpVoice(name="Orus", gender="male"),
+        ]
+    )
 
 
 class VeoPollingConfig(BaseModel):

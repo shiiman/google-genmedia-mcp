@@ -82,10 +82,16 @@ def get_config() -> GenMediaConfig:
     """
     path = get_config_path()
     if path is None or not path.exists():
-        logger.debug("設定ファイルが見つかりません。デフォルト値で起動します。")
+        searched = os.getenv("GENMEDIA_CONFIG_PATH") or str(
+            Path.home() / CONFIG_DIR_NAME / "config.yaml"
+        )
+        logger.warning(
+            "設定ファイルが見つかりません。デフォルト値で起動します。"
+            f" (検索パス: {searched}, HOME={Path.home()})"
+        )
         data: dict[str, Any] = {}
     else:
-        logger.debug(f"設定ファイルを読み込みます: {path}")
+        logger.info(f"設定ファイルを読み込みます: {path}")
         try:
             with open(path, encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}

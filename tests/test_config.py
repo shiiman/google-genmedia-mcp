@@ -29,7 +29,7 @@ class TestGetConfig:
                 with patch("google_genmedia_mcp.utils.config.get_config_path", return_value=None):
                     config = get_config()
                     assert isinstance(config, GenMediaConfig)
-                    assert config.auth.method == "api_key"
+                    assert config.auth.method == "vertex_ai"
             finally:
                 if env_backup is not None:
                     os.environ["GENMEDIA_CONFIG_PATH"] = env_backup
@@ -84,3 +84,17 @@ class TestGetConfig:
             config1 = get_config()
             config2 = get_config()
             assert config1 is config2
+
+    def test_warning_logged_when_config_not_found(self) -> None:
+        """設定ファイルが見つからない場合に warning ログが出力されることを検証."""
+        get_config.cache_clear()
+        with (
+            patch("google_genmedia_mcp.utils.config.get_config_path", return_value=None),
+            patch("google_genmedia_mcp.utils.config.logger") as mock_logger,
+        ):
+            get_config()
+            mock_logger.warning.assert_called_once()
+            log_message = mock_logger.warning.call_args[0][0]
+            assert "設定ファイルが見つかりません" in log_message
+            assert "HOME=" in log_message
+        get_config.cache_clear()

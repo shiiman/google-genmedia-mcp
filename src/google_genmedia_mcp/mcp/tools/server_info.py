@@ -6,9 +6,11 @@ server_info ツールを提供する。
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 from ...core.errors import GenMediaError
+from ...utils.config import get_config_path
 from ..server import mcp
 from ._utils import get_service
 
@@ -92,9 +94,18 @@ def server_info() -> dict[str, Any]:
             ],
         }
 
+        # 設定ファイル診断情報
+        config_path = get_config_path()
+        config_diagnostics = {
+            "config_file_path": str(config_path) if config_path else None,
+            "config_file_found": config_path is not None and config_path.exists(),
+            "home_directory": str(Path.home()),
+        }
+
         return {
             "server": "google-genmedia-mcp",
             "version": "0.1.0",
+            "config_diagnostics": config_diagnostics,
             "auth": {
                 "method": config.auth.method,
                 "has_cloud_credentials": has_cloud,

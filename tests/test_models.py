@@ -18,7 +18,7 @@ class TestGenMediaConfig:
     def test_default_values(self) -> None:
         """デフォルト値が正しく設定されることを検証."""
         config = GenMediaConfig()
-        assert config.auth.method == "api_key"
+        assert config.auth.method == "vertex_ai"
         assert config.auth.api_key == ""
         assert config.output.directory == ".google-genmedia-mcp/output"
         assert config.gcs.enabled is False
@@ -35,11 +35,22 @@ class TestGenMediaConfig:
         assert config.models.veo.default == "veo-3.1-generate-preview"
         assert config.models.lyria.default == "lyria-002"
 
+    def test_model_available_defaults(self) -> None:
+        """モデルの available リストがデフォルトで設定されることを検証."""
+        config = GenMediaConfig()
+        assert len(config.models.imagen.available) == 3
+        assert len(config.models.gemini.available) == 3
+        assert len(config.models.veo.available) == 5
+        assert len(config.models.lyria.available) == 1
+        # Gemini は allowUnregistered=True がデフォルト
+        assert config.models.gemini.allow_unregistered is True
+
     def test_chirp_defaults(self) -> None:
         """Chirp のデフォルト値を検証."""
         config = GenMediaConfig()
         assert config.chirp.default_voice == "Kore"
         assert config.chirp.default_language == "ja-JP"
+        assert len(config.chirp.voices) == 8
 
     def test_veo_polling_defaults(self) -> None:
         """Veo ポーリングのデフォルト値を検証."""
@@ -82,6 +93,60 @@ class TestModelCategory:
             "allowUnregistered": True,
         })
         assert category.allow_unregistered is True
+
+    def test_resolve_none_returns_default(self) -> None:
+        """model=None の場合はデフォルトモデルを返すことを検証."""
+        category = ModelCategory(default="imagen-4.0-fast-generate-001")
+        assert category.resolve(None) == "imagen-4.0-fast-generate-001"
+
+    def test_resolve_default_model_with_empty_available(self) -> None:
+        """available が空でもデフォルトモデル名と一致すれば解決できることを検証."""
+        category = ModelCategory(default="imagen-4.0-fast-generate-001", available=[])
+        assert category.resolve("imagen-4.0-fast-generate-001") == "imagen-4.0-fast-generate-001"
+
+    def test_resolve_alias_from_available(self) -> None:
+        """available リストのエイリアスからモデルを解決できることを検証."""
+        category = ModelCategory(
+            default="imagen-4.0-fast-generate-001",
+            available=[
+                ModelEntry(
+                    id="imagen-4.0-fast-generate-001",
+                    aliases=["Imagen 4 Fast"],
+                ),
+            ],
+        )
+        assert category.resolve("Imagen 4 Fast") == "imagen-4.0-fast-generate-001"
+
+    def test_resolve_model_not_found_raises_error(self) -> None:
+        """未知のモデル名で ModelNotFoundError が発生することを検証."""
+        from google_genmedia_mcp.core.errors import ModelNotFoundError
+
+        category = ModelCategory(default="imagen-4.0-fast-generate-001", available=[])
+        try:
+            category.resolve("nonexistent-model")
+            raise AssertionError("ModelNotFoundError が発生するべき")
+        except ModelNotFoundError as e:
+            assert "nonexistent-model" in e.user_message
+
+    def test_resolve_allow_unregistered(self) -> None:
+        """allow_unregistered=True の場合は未知モデルもそのまま返すことを検証."""
+        category = ModelCategory(
+            default="gemini-2.5-flash",
+            allow_unregistered=True,
+            available=[],
+        )
+        assert category.resolve("custom-model-v1") == "custom-model-v1"
+
+    def test_resolve_error_hint_includes_default(self) -> None:
+        """エラーの hint にデフォルトモデル名が含まれることを検証."""
+        from google_genmedia_mcp.core.errors import ModelNotFoundError
+
+        category = ModelCategory(default="imagen-4.0-fast-generate-001", available=[])
+        try:
+            category.resolve("bad-model")
+            raise AssertionError("ModelNotFoundError が発生するべき")
+        except ModelNotFoundError as e:
+            assert "imagen-4.0-fast-generate-001" in e.hint
 
 
 class TestGenerationResult:
