@@ -268,8 +268,8 @@ output:
 git clone https://github.com/shiiman/google-genmedia-mcp
 cd google-genmedia-mcp
 
-# 依存関係インストール（画像編集・音声機能を含む）
-uv sync --extra phase2 --extra dev
+# 依存関係インストール（開発用ツールを含む）
+uv sync --extra dev
 
 # テスト
 uv run pytest --cov

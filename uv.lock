@@ -616,7 +616,9 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "google-auth-oauthlib" },
+    { name = "google-cloud-aiplatform" },
     { name = "google-cloud-storage" },
+    { name = "google-cloud-texttospeech" },
     { name = "google-genai" },
     { name = "mcp", extra = ["cli"] },
     { name = "platformdirs" },
@@ -634,10 +636,6 @@ dev = [
     { name = "ruff" },
     { name = "types-pyyaml" },
 ]
-phase2 = [
-    { name = "google-cloud-aiplatform" },
-    { name = "google-cloud-texttospeech" },
-]
 
 [package.dev-dependencies]
 dev = [
@@ -647,9 +645,9 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "google-auth-oauthlib", specifier = ">=1.0.0" },
-    { name = "google-cloud-aiplatform", marker = "extra == 'phase2'", specifier = ">=1.0.0" },
+    { name = "google-cloud-aiplatform", specifier = ">=1.0.0" },
     { name = "google-cloud-storage", specifier = ">=2.0.0" },
-    { name = "google-cloud-texttospeech", marker = "extra == 'phase2'", specifier = ">=2.0.0" },
+    { name = "google-cloud-texttospeech", specifier = ">=2.0.0" },
     { name = "google-genai", specifier = ">=1.0.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
@@ -663,7 +661,7 @@ requires-dist = [
     { name = "structlog", specifier = ">=24.0.0" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.0" },
 ]
-provides-extras = ["phase2", "dev"]
+provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "types-pyyaml", specifier = ">=6.0.12.20250915" }]

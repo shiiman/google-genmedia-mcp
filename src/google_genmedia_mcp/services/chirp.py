@@ -62,7 +62,7 @@ class ChirpService:
                 "TTS クライアントの初期化に失敗しました。"
                 "google-cloud-texttospeech がインストールされているか確認してください",
                 "TTS_CLIENT_ERROR",
-                hint="uv sync --extra phase2 を実行してください",
+                hint="uv sync を実行してください",
             )
 
         resolved_voice = voice if voice is not None else self._config.tools.generate_speech.default_voice

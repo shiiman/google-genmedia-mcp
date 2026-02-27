@@ -70,9 +70,6 @@ Each tool with models has `defaultModel` (alias or ID) + `models` list (id + ali
 # Install dependencies
 uv sync
 
-# Install with Phase 2 dependencies (Chirp/Lyria)
-uv sync --extra phase2
-
 # Run tests
 uv run pytest --cov
 

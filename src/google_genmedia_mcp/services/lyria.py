@@ -74,7 +74,7 @@ class LyriaService:
                 "AI Platform クライアントの初期化に失敗しました。"
                 "google-cloud-aiplatform がインストールされているか確認してください",
                 "AIPLATFORM_CLIENT_ERROR",
-                hint="uv sync --extra phase2 を実行してください",
+                hint="uv sync を実行してください",
             )
 
         resolved_model = self.resolve_model(model)

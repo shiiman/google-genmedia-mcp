@@ -79,7 +79,7 @@ class AuthManager:
     def create_tts_client(self, config: GenMediaConfig) -> Any | None:
         """Cloud TTS クライアントを作成する.
 
-        Phase 2 Chirp TTS で使用する。
+        Chirp TTS で使用する。
         API Key 方式では None を返す（TTS は API Key 非対応）。
         """
         if config.auth.method == "api_key":
@@ -91,7 +91,7 @@ class AuthManager:
         except ImportError:
             logger.warning(
                 "google-cloud-texttospeech がインストールされていません。"
-                "uv sync --extra phase2 を実行してください"
+                "uv sync を実行してください"
             )
             return None
 
@@ -102,7 +102,7 @@ class AuthManager:
     def create_aiplatform_client(self, config: GenMediaConfig) -> Any | None:
         """AI Platform クライアントを作成する.
 
-        Phase 2 Lyria 音楽生成で使用する。
+        Lyria 音楽生成で使用する。
         API Key 方式では None を返す（AI Platform は API Key 非対応）。
         """
         if config.auth.method == "api_key":
@@ -114,7 +114,7 @@ class AuthManager:
         except ImportError:
             logger.warning(
                 "google-cloud-aiplatform がインストールされていません。"
-                "uv sync --extra phase2 を実行してください"
+                "uv sync を実行してください"
             )
             return None
 
