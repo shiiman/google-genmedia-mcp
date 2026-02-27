@@ -76,7 +76,7 @@ class GeminiImageService:
 
             config_params: dict[str, object] = {"response_modalities": ["IMAGE", "TEXT"]}
             if aspect_ratio:
-                config_params["image_generation_config"] = {"aspect_ratio": aspect_ratio}
+                config_params["image_config"] = types.ImageConfig(aspect_ratio=aspect_ratio)
 
             response = self._client.genai.models.generate_content(
                 model=resolved_model,

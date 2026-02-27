@@ -20,7 +20,7 @@ EDIT_MODE_MAP = {
     "inpaint_insertion": "EDIT_MODE_INPAINT_INSERTION",
     "inpaint_removal": "EDIT_MODE_INPAINT_REMOVAL",
     "outpaint": "EDIT_MODE_OUTPAINT",
-    "background_replacement": "EDIT_MODE_BACKGROUND_REPLACEMENT",
+    "background_replacement": "EDIT_MODE_BGSWAP",
 }
 
 
