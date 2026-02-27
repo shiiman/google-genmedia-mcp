@@ -38,14 +38,8 @@ class ImagenEditService:
         self._storage = storage
 
     def resolve_model(self, model: str | None) -> str:
-        """モデル名またはエイリアスを解決する.
-
-        画像編集には imagen-4.0-generate-001 以上が推奨される。
-        model=None の場合、編集対応のデフォルト（imagen-4.0-generate-001）を使用する。
-        """
-        if model is None:
-            return "imagen-4.0-generate-001"
-        return self._config.models.imagen.resolve(model, "Imagen モデル")
+        """モデル名またはエイリアスを解決する."""
+        return self._config.tools.edit_image.resolve_model(model)
 
     def edit(
         self,

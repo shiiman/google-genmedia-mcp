@@ -39,38 +39,52 @@ auth:
     location: "us-central1"
 output:
   directory: "/tmp/genmedia-test"
-models:
-  imagen:
-    default: "imagen-4.0-fast-generate-001"
-    available:
+tools:
+  generateImage:
+    defaultModel: "Imagen 4 Fast"
+    allowUnregistered: true
+    models:
       - id: "imagen-4.0-fast-generate-001"
         aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
       - id: "imagen-4.0-generate-001"
         aliases: ["Imagen 4", "imagen-4.0"]
-  gemini:
-    default: "gemini-2.5-flash-preview-image-generation"
-    allowUnregistered: true
-    available:
       - id: "gemini-2.5-flash-preview-image-generation"
-        aliases: ["gemini-2.5-flash-image", "Nano Banana"]
-  veo:
-    default: "veo-3.0-generate-preview"
-    available:
+        aliases: ["Nano Banana", "gemini-2.5-flash-image"]
+  editImage:
+    defaultModel: "Imagen 4 Fast"
+    models:
+      - id: "imagen-4.0-fast-generate-001"
+        aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
+      - id: "imagen-4.0-generate-001"
+        aliases: ["Imagen 4", "imagen-4.0"]
+  generateVideo:
+    defaultModel: "Veo 3"
+    models:
       - id: "veo-3.0-generate-preview"
         aliases: ["Veo 3", "veo-3.0"]
       - id: "veo-2.0-generate-001"
         aliases: ["Veo 2", "veo-2.0"]
-  lyria:
-    default: "lyria-002"
-    available:
+    polling:
+      pollInterval: 15
+      pollTimeout: 600
+  generateVideoFromImage:
+    defaultModel: "Veo 3"
+    models:
+      - id: "veo-3.0-generate-preview"
+        aliases: ["Veo 3", "veo-3.0"]
+      - id: "veo-2.0-generate-001"
+        aliases: ["Veo 2", "veo-2.0"]
+    polling:
+      pollInterval: 15
+      pollTimeout: 600
+  generateSpeech:
+    defaultVoice: "Kore"
+    defaultLanguage: "ja-JP"
+  generateMusic:
+    defaultModel: "Lyria 2"
+    models:
       - id: "lyria-002"
         aliases: ["Lyria 2", "lyria2"]
-chirp:
-  defaultVoice: "Kore"
-  defaultLanguage: "ja-JP"
-veo:
-  pollInterval: 15
-  pollTimeout: 600
 """
     return GenMediaConfig.model_validate(yaml.safe_load(raw))
 
@@ -110,10 +124,18 @@ class TestImagenServiceResolveModel:
         assert self.service.resolve_model("Imagen 4 Fast") == "imagen-4.0-fast-generate-001"
         assert self.service.resolve_model("imagen-4.0-fast") == "imagen-4.0-fast-generate-001"
 
-    def test_resolve_unknown_raises(self) -> None:
-        """存在しないモデル名で ModelNotFoundError が発生することを検証."""
+    def test_resolve_unknown_allowed(self) -> None:
+        """allowUnregistered=True のため未知モデルもそのまま返ることを検証."""
+        result = self.service.resolve_model("unknown-model-xyz")
+        assert result == "unknown-model-xyz"
+
+    def test_resolve_unknown_raises_when_disallowed(self) -> None:
+        """allowUnregistered=False の場合に ModelNotFoundError が発生することを検証."""
+        config = _make_config()
+        config.tools.generate_image.allow_unregistered = False
+        service = ImagenService(self.client_mock, config, self.storage_mock)
         with pytest.raises(ModelNotFoundError):
-            self.service.resolve_model("unknown-model-xyz")
+            service.resolve_model("unknown-model-xyz")
 
 
 class TestImagenServiceGenerate:
@@ -177,8 +199,9 @@ class TestGeminiImageServiceResolveModel:
         self.service = GeminiImageService(self.client_mock, self.config, self.storage_mock)
 
     def test_resolve_none_returns_default(self) -> None:
-        """None でデフォルトモデルが返ることを検証."""
-        assert self.service.resolve_model(None) == "gemini-2.5-flash-preview-image-generation"
+        """None で共有デフォルトモデルが返ることを検証."""
+        # Imagen / Gemini 共通の generate_image 設定を使用
+        assert self.service.resolve_model(None) == "imagen-4.0-fast-generate-001"
 
     def test_resolve_by_alias(self) -> None:
         """エイリアスで解決されることを検証."""
@@ -191,9 +214,8 @@ class TestGeminiImageServiceResolveModel:
 
     def test_disallow_unregistered_model(self) -> None:
         """allowUnregistered が False のとき未登録モデルで ModelNotFoundError を検証."""
-        # allowUnregistered を False にした設定を作成
         config = _make_config()
-        config.models.gemini.allow_unregistered = False
+        config.tools.generate_image.allow_unregistered = False
         service = GeminiImageService(self.client_mock, config, self.storage_mock)
 
         with pytest.raises(ModelNotFoundError):
@@ -236,6 +258,15 @@ class TestGeminiImageServiceGenerate:
             self.service.generate(prompt="テスト")
         assert "GEMINI_GENERATION_ERROR" in str(exc_info.value.debug_code)
 
+    def test_generate_invalid_gcs_uri_raises(self) -> None:
+        """無効な GCS URI で GenerationError が発生することを検証."""
+        with pytest.raises(GenerationError) as exc_info:
+            self.service.generate(
+                prompt="テスト",
+                reference_image_gcs_uri="/local/path/image.jpg",
+            )
+        assert "INVALID_GCS_URI" in str(exc_info.value.debug_code)
+
     def test_generate_text_response(self) -> None:
         """テキストレスポンスが含まれる場合も処理できることを検証."""
         mock_text_part = MagicMock()
@@ -275,14 +306,19 @@ class TestVeoServiceResolveModel:
         with pytest.raises(ModelNotFoundError):
             self.service.resolve_model("veo-unknown")
 
+    def test_resolve_model_i2v_uses_separate_config(self) -> None:
+        """I2V 用 resolve_model が generateVideoFromImage 設定を使うことを検証."""
+        assert self.service.resolve_model_i2v(None) == "veo-3.0-generate-preview"
+        assert self.service.resolve_model_i2v("Veo 2") == "veo-2.0-generate-001"
+
 
 class TestVeoServiceGenerate:
     """VeoService.generate_from_text() のテスト."""
 
     def setup_method(self) -> None:
         self.config = _make_config()
-        self.config.veo.poll_interval = 1
-        self.config.veo.poll_timeout = 5
+        self.config.tools.generate_video.polling.poll_interval = 1
+        self.config.tools.generate_video.polling.poll_timeout = 5
         self.client_mock = MagicMock()
         self.storage_mock = MagicMock()
         self.storage_mock.save_video_from_gcs_or_bytes.return_value = "/tmp/video.mp4"
@@ -319,6 +355,28 @@ class TestVeoServiceGenerate:
         with pytest.raises(GenerationError) as exc_info:
             self.service.generate_from_text(prompt="タイムアウトテスト")
         assert "VEO_TIMEOUT" in str(exc_info.value.debug_code)
+
+    def test_generate_from_image_invalid_gcs_uri(self) -> None:
+        """無効な GCS URI で GenerationError が発生することを検証."""
+        with pytest.raises(GenerationError) as exc_info:
+            self.service.generate_from_image(
+                prompt="テスト", image_gcs_uri="/local/path/image.jpg"
+            )
+        assert "INVALID_GCS_URI" in str(exc_info.value.debug_code)
+
+    def test_generate_from_image_valid_gcs_uri(self) -> None:
+        """有効な GCS URI でバリデーションを通過することを検証."""
+        mock_video = MagicMock()
+        mock_video.video.uri = "gs://bucket/output.mp4"
+        mock_operation = MagicMock()
+        mock_operation.done = True
+        mock_operation.response.generated_videos = [mock_video]
+        self.client_mock.genai.models.generate_videos.return_value = mock_operation
+
+        result = self.service.generate_from_image(
+            prompt="テスト", image_gcs_uri="gs://bucket/image.jpg"
+        )
+        assert len(result.videos) == 1
 
 
 # ===== LyriaService =====

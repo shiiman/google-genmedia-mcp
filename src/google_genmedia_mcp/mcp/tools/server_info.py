@@ -51,46 +51,34 @@ def server_info() -> dict[str, Any]:
             # API Key 方式では Phase 2 の一部ツールが利用不可
             unavailable_tools = ["generate_speech", "generate_music"]
 
-        # モデル一覧
-        models_info: dict[str, Any] = {
-            "imagen": {
-                "default": config.models.imagen.default,
-                "available": [
+        # ツール別モデル・設定一覧
+        speech_cfg = config.tools.generate_speech
+
+        def _tool_models(cfg: object) -> dict[str, Any]:
+            """ツール設定からモデル情報を抽出する."""
+            return {
+                "default_model": getattr(cfg, "default_model", None),
+                "models": [
                     {"id": e.id, "aliases": e.aliases}
-                    for e in config.models.imagen.available
+                    for e in getattr(cfg, "models", [])
                 ],
-            },
-            "gemini": {
-                "default": config.models.gemini.default,
-                "allow_unregistered": config.models.gemini.allow_unregistered,
-                "available": [
-                    {"id": e.id, "aliases": e.aliases}
-                    for e in config.models.gemini.available
-                ],
-            },
-            "veo": {
-                "default": config.models.veo.default,
-                "available": [
-                    {"id": e.id, "aliases": e.aliases}
-                    for e in config.models.veo.available
-                ],
-            },
-            "lyria": {
-                "default": config.models.lyria.default,
-                "available": [
-                    {"id": e.id, "aliases": e.aliases}
-                    for e in config.models.lyria.available
-                ],
-            },
+            }
+
+        tools_models: dict[str, Any] = {
+            "generate_image": _tool_models(config.tools.generate_image),
+            "edit_image": _tool_models(config.tools.edit_image),
+            "generate_video": _tool_models(config.tools.generate_video),
+            "generate_video_from_image": _tool_models(config.tools.generate_video_from_image),
+            "generate_music": _tool_models(config.tools.generate_music),
         }
 
         # Chirp ボイス
         chirp_info: dict[str, Any] = {
-            "default_voice": config.chirp.default_voice,
-            "default_language": config.chirp.default_language,
+            "default_voice": speech_cfg.default_voice,
+            "default_language": speech_cfg.default_language,
             "voices": [
                 {"name": v.name, "gender": v.gender}
-                for v in config.chirp.voices
+                for v in speech_cfg.voices
             ],
         }
 
@@ -118,7 +106,7 @@ def server_info() -> dict[str, Any]:
                 if unavailable_tools
                 else None
             ),
-            "models": models_info,
+            "tools_models": tools_models,
             "chirp": chirp_info,
         }
     except GenMediaError as e:

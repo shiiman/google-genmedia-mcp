@@ -31,7 +31,7 @@ class ImagenService:
 
     def resolve_model(self, model: str | None) -> str:
         """モデル名またはエイリアスを正式モデル ID に解決する."""
-        return self._config.models.imagen.resolve(model, "Imagen モデル")
+        return self._config.tools.generate_image.resolve_model(model, "Imagen モデル")
 
     def generate(
         self,

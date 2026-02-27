@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import pytest
+
+from google_genmedia_mcp.core.errors import ModelNotFoundError
 from google_genmedia_mcp.core.models import (
     AuthConfig,
     GeneratedImage,
     GenerationResult,
     GenMediaConfig,
-    ModelCategory,
     ModelEntry,
+    ToolsConfig,
 )
 
 
@@ -28,35 +31,39 @@ class TestGenMediaConfig:
         assert config.server.log_level == "INFO"
 
     def test_model_defaults(self) -> None:
-        """モデルのデフォルト値を検証."""
+        """defaultModel のデフォルト値を検証."""
         config = GenMediaConfig()
-        assert config.models.imagen.default == "imagen-4.0-fast-generate-001"
-        assert config.models.gemini.default == "gemini-3.1-flash-image-preview"
-        assert config.models.veo.default == "veo-3.1-generate-preview"
-        assert config.models.lyria.default == "lyria-002"
+        assert config.tools.generate_image.default_model == "Nano Banana 2"
+        assert config.tools.edit_image.default_model == "Imagen 4"
+        assert config.tools.generate_video.default_model == "Veo 3.1"
+        assert config.tools.generate_video_from_image.default_model == "Veo 3.1"
+        assert config.tools.generate_music.default_model == "Lyria 2"
 
-    def test_model_available_defaults(self) -> None:
-        """モデルの available リストがデフォルトで設定されることを検証."""
+    def test_model_list_defaults(self) -> None:
+        """models リストがデフォルトで設定されることを検証."""
         config = GenMediaConfig()
-        assert len(config.models.imagen.available) == 3
-        assert len(config.models.gemini.available) == 3
-        assert len(config.models.veo.available) == 5
-        assert len(config.models.lyria.available) == 1
-        # Gemini は allowUnregistered=True がデフォルト
-        assert config.models.gemini.allow_unregistered is True
+        assert len(config.tools.generate_image.models) == 6  # Imagen 3 + Gemini 3
+        assert len(config.tools.edit_image.models) == 3  # Imagen のみ
+        assert len(config.tools.generate_video.models) == 5
+        assert len(config.tools.generate_video_from_image.models) == 5
+        assert len(config.tools.generate_music.models) == 1
+        # generateImage は allowUnregistered=True がデフォルト
+        assert config.tools.generate_image.allow_unregistered is True
 
     def test_chirp_defaults(self) -> None:
         """Chirp のデフォルト値を検証."""
         config = GenMediaConfig()
-        assert config.chirp.default_voice == "Kore"
-        assert config.chirp.default_language == "ja-JP"
-        assert len(config.chirp.voices) == 8
+        assert config.tools.generate_speech.default_voice == "Kore"
+        assert config.tools.generate_speech.default_language == "ja-JP"
+        assert len(config.tools.generate_speech.voices) == 8
 
     def test_veo_polling_defaults(self) -> None:
         """Veo ポーリングのデフォルト値を検証."""
         config = GenMediaConfig()
-        assert config.veo.poll_interval == 15
-        assert config.veo.poll_timeout == 600
+        assert config.tools.generate_video.polling.poll_interval == 15
+        assert config.tools.generate_video.polling.poll_timeout == 600
+        assert config.tools.generate_video_from_image.polling.poll_interval == 15
+        assert config.tools.generate_video_from_image.polling.poll_timeout == 600
 
 
 class TestAuthConfig:
@@ -77,8 +84,8 @@ class TestAuthConfig:
         assert config.vertex_ai.location == "asia-northeast1"
 
 
-class TestModelCategory:
-    """ModelCategory のテスト."""
+class TestModelEntry:
+    """ModelEntry のテスト."""
 
     def test_aliases(self) -> None:
         """エイリアスが正しく設定されることを検証."""
@@ -86,67 +93,77 @@ class TestModelCategory:
         assert "Imagen 4" in entry.aliases
         assert "imagen-4.0" in entry.aliases
 
-    def test_allow_unregistered_alias(self) -> None:
-        """allowUnregistered エイリアスが機能することを検証."""
-        category = ModelCategory.model_validate({
-            "default": "gemini-2.5-flash",
-            "allowUnregistered": True,
-        })
-        assert category.allow_unregistered is True
+
+class TestResolveModel:
+    """ツール設定の resolve_model() のテスト."""
 
     def test_resolve_none_returns_default(self) -> None:
-        """model=None の場合はデフォルトモデルを返すことを検証."""
-        category = ModelCategory(default="imagen-4.0-fast-generate-001")
-        assert category.resolve(None) == "imagen-4.0-fast-generate-001"
+        """model=None でデフォルトモデルが解決されることを検証."""
+        config = GenMediaConfig()
+        resolved = config.tools.generate_image.resolve_model(None)
+        assert resolved == "gemini-3.1-flash-image-preview"
 
-    def test_resolve_default_model_with_empty_available(self) -> None:
-        """available が空でもデフォルトモデル名と一致すれば解決できることを検証."""
-        category = ModelCategory(default="imagen-4.0-fast-generate-001", available=[])
-        assert category.resolve("imagen-4.0-fast-generate-001") == "imagen-4.0-fast-generate-001"
+    def test_resolve_by_alias(self) -> None:
+        """エイリアスからモデルを解決できることを検証."""
+        config = GenMediaConfig()
+        assert config.tools.generate_image.resolve_model("Imagen 4 Fast") == "imagen-4.0-fast-generate-001"
+        assert config.tools.generate_image.resolve_model("Nano Banana") == "gemini-2.5-flash-image"
 
-    def test_resolve_alias_from_available(self) -> None:
-        """available リストのエイリアスからモデルを解決できることを検証."""
-        category = ModelCategory(
-            default="imagen-4.0-fast-generate-001",
-            available=[
-                ModelEntry(
-                    id="imagen-4.0-fast-generate-001",
-                    aliases=["Imagen 4 Fast"],
-                ),
-            ],
-        )
-        assert category.resolve("Imagen 4 Fast") == "imagen-4.0-fast-generate-001"
+    def test_resolve_by_id(self) -> None:
+        """モデル ID で直接解決できることを検証."""
+        config = GenMediaConfig()
+        assert config.tools.generate_image.resolve_model("imagen-4.0-generate-001") == "imagen-4.0-generate-001"
 
     def test_resolve_model_not_found_raises_error(self) -> None:
         """未知のモデル名で ModelNotFoundError が発生することを検証."""
-        from google_genmedia_mcp.core.errors import ModelNotFoundError
-
-        category = ModelCategory(default="imagen-4.0-fast-generate-001", available=[])
-        try:
-            category.resolve("nonexistent-model")
-            raise AssertionError("ModelNotFoundError が発生するべき")
-        except ModelNotFoundError as e:
-            assert "nonexistent-model" in e.user_message
+        config = GenMediaConfig()
+        # generateVideo は allow_unregistered=False
+        with pytest.raises(ModelNotFoundError) as exc_info:
+            config.tools.generate_video.resolve_model("nonexistent-model")
+        assert "nonexistent-model" in exc_info.value.user_message
 
     def test_resolve_allow_unregistered(self) -> None:
         """allow_unregistered=True の場合は未知モデルもそのまま返すことを検証."""
-        category = ModelCategory(
-            default="gemini-2.5-flash",
-            allow_unregistered=True,
-            available=[],
-        )
-        assert category.resolve("custom-model-v1") == "custom-model-v1"
+        config = GenMediaConfig()
+        # generateImage は allow_unregistered=True
+        result = config.tools.generate_image.resolve_model("custom-model-v1")
+        assert result == "custom-model-v1"
 
     def test_resolve_error_hint_includes_default(self) -> None:
         """エラーの hint にデフォルトモデル名が含まれることを検証."""
-        from google_genmedia_mcp.core.errors import ModelNotFoundError
+        config = GenMediaConfig()
+        with pytest.raises(ModelNotFoundError) as exc_info:
+            config.tools.generate_video.resolve_model("bad-model")
+        assert "Veo 3.1" in exc_info.value.hint
 
-        category = ModelCategory(default="imagen-4.0-fast-generate-001", available=[])
-        try:
-            category.resolve("bad-model")
-            raise AssertionError("ModelNotFoundError が発生するべき")
-        except ModelNotFoundError as e:
-            assert "imagen-4.0-fast-generate-001" in e.hint
+    def test_veo_resolve_none(self) -> None:
+        """Veo の model=None でデフォルトが返ることを検証."""
+        config = GenMediaConfig()
+        assert config.tools.generate_video.resolve_model(None) == "veo-3.1-generate-preview"
+
+    def test_lyria_resolve_by_alias(self) -> None:
+        """Lyria のエイリアス解決を検証."""
+        config = GenMediaConfig()
+        assert config.tools.generate_music.resolve_model("Lyria 2") == "lyria-002"
+        assert config.tools.generate_music.resolve_model("lyria2") == "lyria-002"
+
+    def test_edit_image_resolve(self) -> None:
+        """editImage の resolve_model を検証."""
+        config = GenMediaConfig()
+        # デフォルト: "Imagen 4" → "imagen-4.0-generate-001"
+        assert config.tools.edit_image.resolve_model(None) == "imagen-4.0-generate-001"
+        assert config.tools.edit_image.resolve_model("Imagen 4 Fast") == "imagen-4.0-fast-generate-001"
+
+    def test_custom_models_list(self) -> None:
+        """カスタム models リストで解決できることを検証."""
+        from google_genmedia_mcp.core.models import GenerateImageToolConfig
+
+        cfg = GenerateImageToolConfig(
+            defaultModel="My Model",
+            models=[ModelEntry(id="custom-v1", aliases=["My Model"])],
+        )
+        assert cfg.resolve_model(None) == "custom-v1"
+        assert cfg.resolve_model("My Model") == "custom-v1"
 
 
 class TestGenerationResult:
@@ -178,3 +195,103 @@ class TestGenerationResult:
         dumped = result.model_dump()
         assert isinstance(dumped, dict)
         assert dumped["model"] == "test-model"
+
+
+class TestToolsConfig:
+    """ToolsConfig のテスト."""
+
+    def test_default_values(self) -> None:
+        """tools セクションのデフォルト値を検証."""
+        config = GenMediaConfig()
+        assert config.tools.generate_image.aspect_ratio == "16:9"
+        assert config.tools.generate_image.number_of_images == 1
+        assert config.tools.generate_image.output_mime_type == "image/png"
+        assert config.tools.generate_image.default_model == "Nano Banana 2"
+        assert config.tools.edit_image.edit_mode == "inpaint_insertion"
+        assert config.tools.edit_image.number_of_images == 1
+        assert config.tools.generate_video.aspect_ratio == "16:9"
+        assert config.tools.generate_video.duration_seconds == 5
+        assert config.tools.generate_video.number_of_videos == 1
+        assert config.tools.generate_video_from_image.aspect_ratio == "16:9"
+        assert config.tools.generate_video_from_image.duration_seconds == 5
+        assert config.tools.generate_speech.voice is None
+        assert config.tools.generate_speech.language is None
+        assert config.tools.generate_speech.audio_encoding == "mp3"
+
+    def test_models_in_each_tool(self) -> None:
+        """各ツールにモデル定義が含まれることを検証."""
+        config = GenMediaConfig()
+        assert len(config.tools.generate_image.models) == 6
+        assert len(config.tools.edit_image.models) == 3  # Imagen のみ
+        assert len(config.tools.generate_video.models) == 5
+        assert len(config.tools.generate_video_from_image.models) == 5
+        assert len(config.tools.generate_music.models) == 1
+
+    def test_yaml_alias_with_default_model(self) -> None:
+        """camelCase エイリアスで defaultModel・パラメータを設定できることを検証."""
+        tc = ToolsConfig.model_validate({
+            "generateImage": {
+                "defaultModel": "Imagen 4 Fast",
+                "aspectRatio": "1:1",
+                "numberOfImages": 4,
+            },
+            "generateVideo": {"durationSeconds": 8},
+            "generateSpeech": {
+                "voice": "Puck",
+                "language": "en-US",
+                "audioEncoding": "ogg_opus",
+            },
+            "generateMusic": {"defaultModel": "lyria-002"},
+        })
+        assert tc.generate_image.default_model == "Imagen 4 Fast"
+        assert tc.generate_image.aspect_ratio == "1:1"
+        assert tc.generate_image.number_of_images == 4
+        assert tc.generate_video.duration_seconds == 8
+        assert tc.generate_speech.voice == "Puck"
+        assert tc.generate_speech.language == "en-US"
+        assert tc.generate_speech.audio_encoding == "ogg_opus"
+        assert tc.generate_music.default_model == "lyria-002"
+
+    def test_partial_override(self) -> None:
+        """一部のみ上書きした場合、他はデフォルト値が維持されることを検証."""
+        tc = ToolsConfig.model_validate({
+            "generateImage": {"aspectRatio": "9:16"},
+        })
+        assert tc.generate_image.aspect_ratio == "9:16"
+        # 上書きしていないフィールドはデフォルト値
+        assert tc.generate_image.default_model == "Nano Banana 2"
+        assert tc.generate_image.number_of_images == 1
+        assert tc.generate_image.output_mime_type == "image/png"
+        # モデルリストもデフォルト値が維持される
+        assert len(tc.generate_image.models) == 6
+        # 上書きしていないツールもデフォルト値
+        assert tc.generate_video.aspect_ratio == "16:9"
+
+    def test_chirp_settings_in_generate_speech(self) -> None:
+        """generateSpeech に Chirp 設定を camelCase で設定できることを検証."""
+        tc = ToolsConfig.model_validate({
+            "generateSpeech": {
+                "defaultVoice": "Puck",
+                "defaultLanguage": "en-US",
+                "voices": [
+                    {"name": "Puck", "gender": "male"},
+                    {"name": "Kore", "gender": "female"},
+                ],
+            },
+        })
+        assert tc.generate_speech.default_voice == "Puck"
+        assert tc.generate_speech.default_language == "en-US"
+        assert len(tc.generate_speech.voices) == 2
+
+    def test_veo_polling_in_generate_video(self) -> None:
+        """generateVideo にポーリング設定を設定できることを検証."""
+        tc = ToolsConfig.model_validate({
+            "generateVideo": {
+                "polling": {
+                    "pollInterval": 30,
+                    "pollTimeout": 1200,
+                },
+            },
+        })
+        assert tc.generate_video.polling.poll_interval == 30
+        assert tc.generate_video.polling.poll_timeout == 1200

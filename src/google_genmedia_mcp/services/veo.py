@@ -11,7 +11,7 @@ from typing import Any
 
 from ..core.client import GenMediaClient
 from ..core.errors import GenerationError
-from ..core.models import GeneratedVideo, GenerationResult, GenMediaConfig
+from ..core.models import GeneratedVideo, GenerationResult, GenMediaConfig, VeoPollingConfig
 from .storage import StorageService
 
 logger = logging.getLogger(__name__)
@@ -31,8 +31,12 @@ class VeoService:
         self._storage = storage
 
     def resolve_model(self, model: str | None) -> str:
-        """モデル名またはエイリアスを解決する."""
-        return self._config.models.veo.resolve(model, "Veo モデル")
+        """テキストから動画生成用のモデルを解決する."""
+        return self._config.tools.generate_video.resolve_model(model)
+
+    def resolve_model_i2v(self, model: str | None) -> str:
+        """画像から動画生成用のモデルを解決する."""
+        return self._config.tools.generate_video_from_image.resolve_model(model)
 
     def generate_from_text(
         self,
@@ -56,6 +60,7 @@ class VeoService:
         """
         self._validate_params(aspect_ratio, duration_seconds)
         resolved_model = self.resolve_model(model)
+        polling_cfg = self._config.tools.generate_video.polling
         logger.info(f"Veo でテキストから動画生成を開始します (model={resolved_model})")
 
         try:
@@ -68,7 +73,7 @@ class VeoService:
                     "number_of_videos": number_of_videos,
                 },
             )
-            operation = self._poll_operation(operation)
+            operation = self._poll_operation(operation, polling_cfg)
         except GenerationError:
             raise
         except Exception as e:
@@ -101,8 +106,15 @@ class VeoService:
         """
         from google.genai import types
 
+        if not image_gcs_uri.startswith("gs://"):
+            raise GenerationError(
+                f"無効な GCS URI です: {image_gcs_uri}",
+                "INVALID_GCS_URI",
+                hint="gs://bucket/path/image.jpg 形式で指定してください",
+            )
         self._validate_params(aspect_ratio, duration_seconds)
-        resolved_model = self.resolve_model(model)
+        resolved_model = self.resolve_model_i2v(model)
+        polling_cfg = self._config.tools.generate_video_from_image.polling
         logger.info(f"Veo で画像から動画生成を開始します (model={resolved_model})")
 
         try:
@@ -115,7 +127,7 @@ class VeoService:
                     "duration_seconds": duration_seconds,
                 },
             )
-            operation = self._poll_operation(operation)
+            operation = self._poll_operation(operation, polling_cfg)
         except GenerationError:
             raise
         except Exception as e:
@@ -142,10 +154,11 @@ class VeoService:
                 "INVALID_PARAMETER",
             )
 
-    def _poll_operation(self, operation: Any) -> Any:
+    def _poll_operation(self, operation: Any, polling: VeoPollingConfig | None = None) -> Any:
         """操作が完了するまでポーリングする."""
-        interval = self._config.veo.poll_interval
-        timeout = self._config.veo.poll_timeout
+        polling = polling if polling is not None else self._config.tools.generate_video.polling
+        interval = polling.poll_interval
+        timeout = polling.poll_timeout
         elapsed = 0
 
         while not operation.done:
@@ -153,7 +166,7 @@ class VeoService:
                 raise GenerationError(
                     f"Veo 動画生成がタイムアウトしました ({timeout} 秒)",
                     "VEO_TIMEOUT",
-                    hint="config.yaml の veo.pollTimeout を増やすか、短い動画を生成してください",
+                    hint="config.yaml の tools.generateVideo.polling.pollTimeout を増やすか、短い動画を生成してください",
                 )
             logger.debug(f"Veo 操作をポーリング中... (経過: {elapsed}秒)")
             time.sleep(interval)

@@ -74,7 +74,6 @@ def _make_service_mock() -> MagicMock:
     """GenMediaService のモックを作成する."""
     mock = MagicMock()
     mock.config = GenMediaConfig()
-    mock.config.models.gemini.available = []  # _is_gemini_model のエイリアス判定用
     return mock
 
 
@@ -383,70 +382,3 @@ class TestCombineAudioVideoTool:
 
         assert "error" in result
         assert result["code"] == "FFMPEG_ERROR"
-
-
-# ===== _is_gemini_model ヘルパー =====
-
-
-class TestIsGeminiModel:
-    """image.py の _is_gemini_model 関数のテスト."""
-
-    def setup_method(self) -> None:
-        from google_genmedia_mcp.mcp.tools.image import _is_gemini_model
-
-        self._is_gemini_model = _is_gemini_model
-        self.config = GenMediaConfig()
-
-    def test_none_returns_false(self) -> None:
-        assert self._is_gemini_model(None, self.config) is False
-
-    def test_gemini_prefix_returns_true(self) -> None:
-        assert self._is_gemini_model("gemini-2.5-flash-image", self.config) is True
-
-    def test_gemini_space_prefix_returns_true(self) -> None:
-        assert self._is_gemini_model("gemini something", self.config) is True
-
-    def test_imagen_model_returns_false(self) -> None:
-        assert self._is_gemini_model("imagen-4.0-generate-001", self.config) is False
-
-    def test_alias_in_config_returns_true(self) -> None:
-        from google_genmedia_mcp.core.models import ModelCategory, ModelEntry
-
-        config = GenMediaConfig()
-        config.models.gemini = ModelCategory(
-            default="gemini-flash",
-            available=[ModelEntry(id="gemini-flash", aliases=["Nano Banana"])],
-        )
-        assert self._is_gemini_model("Nano Banana", config) is True
-
-
-# ===== _is_imagen_model ヘルパー =====
-
-
-class TestIsImagenModel:
-    """image.py の _is_imagen_model 関数のテスト."""
-
-    def setup_method(self) -> None:
-        from google_genmedia_mcp.mcp.tools.image import _is_imagen_model
-
-        self._is_imagen_model = _is_imagen_model
-        self.config = GenMediaConfig()
-
-    def test_none_returns_false(self) -> None:
-        assert self._is_imagen_model(None, self.config) is False
-
-    def test_imagen_prefix_returns_true(self) -> None:
-        assert self._is_imagen_model("imagen-4.0-generate-001", self.config) is True
-
-    def test_gemini_model_returns_false(self) -> None:
-        assert self._is_imagen_model("gemini-2.5-flash-image", self.config) is False
-
-    def test_alias_in_config_returns_true(self) -> None:
-        from google_genmedia_mcp.core.models import ModelCategory, ModelEntry
-
-        config = GenMediaConfig()
-        config.models.imagen = ModelCategory(
-            default="imagen-4.0-fast",
-            available=[ModelEntry(id="imagen-4.0-fast", aliases=["Imagen 4 Fast"])],
-        )
-        assert self._is_imagen_model("Imagen 4 Fast", config) is True

@@ -65,8 +65,8 @@ class ChirpService:
                 hint="uv sync --extra phase2 を実行してください",
             )
 
-        resolved_voice = voice or self._config.chirp.default_voice
-        resolved_lang = language or self._config.chirp.default_language
+        resolved_voice = voice if voice is not None else self._config.tools.generate_speech.default_voice
+        resolved_lang = language if language is not None else self._config.tools.generate_speech.default_language
         voice_name = f"{resolved_lang}-Chirp3-HD-{resolved_voice}"
 
         logger.info(f"Chirp TTS で音声合成を開始します (voice={voice_name})")

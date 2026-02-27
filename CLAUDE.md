@@ -40,6 +40,22 @@ Override via environment variable: `GENMEDIA_CONFIG_PATH`
 
 API key override: `GENMEDIA_API_KEY` environment variable
 
+### Config Structure
+
+The `tools` section in config.yaml manages per-tool defaults and model lists:
+
+```yaml
+tools:
+  generateImage:    # defaultModel, aspectRatio, numberOfImages, outputMimeType, allowUnregistered, models
+  editImage:        # defaultModel (Imagen only), editMode, numberOfImages, models
+  generateVideo:    # defaultModel, aspectRatio, durationSeconds, numberOfVideos, models, polling
+  generateVideoFromImage:  # defaultModel, aspectRatio, durationSeconds, models, polling
+  generateSpeech:   # audioEncoding, defaultVoice, defaultLanguage, voices
+  generateMusic:    # defaultModel, models
+```
+
+Each tool with models has `defaultModel` (alias or ID) + `models` list (id + aliases). Model resolution: alias/ID lookup → `_resolve_model()` in `core/models.py`.
+
 ## Development Commands
 
 ```bash
@@ -67,15 +83,18 @@ uv run google-genmedia-mcp auth login
 
 ## MCP Tools
 
-### Phase 1
-- `imagen_t2i`: Text-to-image with Imagen models
-- `gemini_image_generation`: Image generation/editing with Gemini
-- `veo_t2v`: Text-to-video with Veo models
-- `veo_i2v`: Image-to-video with Veo models
-- `server_info`: Server status and available tools/models
+All tools are defined in `src/google_genmedia_mcp/mcp/tools/`.
 
-### Phase 2
-- `imagen_edit`: Image editing (inpainting, outpainting, etc.)
-- `chirp_tts`: Text-to-speech with Chirp 3 HD (requires vertex_ai/oauth)
-- `lyria_generate_music`: Music generation with Lyria (requires vertex_ai/oauth)
-- `av_combine`: Combine video and audio with ffmpeg
+### Image & Video (all auth methods)
+
+- `generate_image`: Text-to-image with Imagen or Gemini (auto-routed by model prefix)
+- `edit_image`: Image editing with Imagen (inpainting, outpainting, background replacement)
+- `generate_video`: Text-to-video with Veo models
+- `generate_video_from_image`: Image-to-video with Veo models (GCS URI required)
+- `server_info`: Server status, available tools/models, config diagnostics
+
+### Audio & Utility (vertex_ai/oauth only for audio)
+
+- `generate_speech`: Text-to-speech with Chirp 3 HD (requires vertex_ai/oauth)
+- `generate_music`: Music generation with Lyria (requires vertex_ai/oauth)
+- `combine_audio_video`: Combine video and audio with ffmpeg (all auth methods)

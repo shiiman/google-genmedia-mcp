@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 def edit_image(
     prompt: str,
     reference_image: str,
-    edit_mode: str = "inpaint_insertion",
+    edit_mode: str | None = None,
     mask_image: str | None = None,
     model: str | None = None,
-    number_of_images: int = 1,
+    number_of_images: int | None = None,
     negative_prompt: str | None = None,
 ) -> dict[str, Any]:
     """Imagen モデルで画像を編集する（インペインティング、アウトペインティング等）。
@@ -30,20 +30,26 @@ def edit_image(
     Args:
         prompt: 編集内容の説明テキスト
         reference_image: 参照画像（GCS URI: gs://bucket/file.png またはローカルパス）
-        edit_mode: 編集モード
+        edit_mode: 編集モード。デフォルト: config 設定値 (inpaint_insertion)
             - inpaint_insertion: マスク領域にオブジェクトを追加
             - inpaint_removal: マスク領域のオブジェクトを除去
             - outpaint: 画像の外側を拡張
             - background_replacement: 背景を置換
         mask_image: マスク画像（inpaint 系で必須、GCS URI またはローカルパス）
         model: 使用するモデル名またはエイリアス（省略時は imagen-4.0-generate-001）
-        number_of_images: 生成枚数
+        number_of_images: 生成枚数。デフォルト: config 設定値 (1)
         negative_prompt: 生成から除外したい要素の説明
 
     Returns:
         生成結果（編集済み画像ファイルパスを含む辞書）
     """
     try:
+        tool_cfg = get_service().config.tools.edit_image
+
+        # config のデフォルト値を適用（None のみフォールバック、falsy 値は維持）
+        edit_mode = edit_mode if edit_mode is not None else tool_cfg.edit_mode
+        number_of_images = number_of_images if number_of_images is not None else tool_cfg.number_of_images
+
         result = get_service().imagen_edit.edit(
             prompt=prompt,
             reference_image=reference_image,

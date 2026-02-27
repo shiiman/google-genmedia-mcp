@@ -11,8 +11,8 @@ google-genmedia-mcp がサポートするモデルの一覧と料金参考情報
 | モデル ID | エイリアス | 特徴 | 参考料金 (Vertex AI) |
 |-----------|-----------|------|---------------------|
 | `imagen-4.0-ultra-generate-001` | `Imagen 4 Ultra`, `imagen-4.0-ultra` | 最高品質 | $0.06 / 枚 |
-| `imagen-4.0-generate-001` | `Imagen 4`, `imagen-4.0` | 標準品質 | $0.04 / 枚 |
-| `imagen-4.0-fast-generate-001` | `Imagen 4 Fast`, `imagen-4.0-fast` | 高速・低コスト（**デフォルト**） | $0.02 / 枚 |
+| `imagen-4.0-generate-001` | `Imagen 4`, `imagen-4.0` | 標準品質（`edit_image` **デフォルト**） | $0.04 / 枚 |
+| `imagen-4.0-fast-generate-001` | `Imagen 4 Fast`, `imagen-4.0-fast` | 高速・低コスト | $0.02 / 枚 |
 
 ### 主な機能
 
@@ -136,8 +136,25 @@ model: "Veo 3"              # -> veo-3.0-generate-preview
 model: "Lyria 2"            # -> lyria-002
 ```
 
-`generate_image` で `model` を省略した場合は Gemini デフォルト（Nano Banana 2）が使用されます。
+`generate_image` で `model` を省略した場合は config の `defaultModel`（デフォルト: Nano Banana 2）が使用されます。
 Imagen を使いたい場合は明示的にモデル名を指定してください（例: `model: "Imagen 4 Fast"`）。
+
+### config.yaml でのモデルカスタマイズ
+
+各ツールの `defaultModel` と `models` リストは `config.yaml` の `tools` セクションで変更可能です:
+
+```yaml
+tools:
+  generateImage:
+    defaultModel: "Imagen 4 Fast"   # デフォルトを Imagen に変更
+    models:
+      - id: "imagen-4.0-fast-generate-001"
+        aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
+      - id: "gemini-3.1-flash-image-preview"
+        aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
+```
+
+> `allowUnregistered: true`（`generateImage` のデフォルト）を設定すると、`models` リストに未登録のモデル ID も直接指定可能です。
 
 ---
 

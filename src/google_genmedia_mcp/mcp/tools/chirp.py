@@ -20,7 +20,7 @@ def generate_speech(
     text: str,
     voice: str | None = None,
     language: str | None = None,
-    audio_encoding: str = "mp3",
+    audio_encoding: str | None = None,
 ) -> dict[str, Any]:
     """Chirp 3 HD でテキストを音声に変換する。
 
@@ -33,12 +33,19 @@ def generate_speech(
                省略時は config のデフォルト（Kore）
         language: 言語コード（ja-JP, en-US 等）
                   省略時は config のデフォルト（ja-JP）
-        audio_encoding: 出力フォーマット（mp3 / ogg_opus / pcm）
+        audio_encoding: 出力フォーマット（mp3 / ogg_opus / pcm）。デフォルト: config 設定値 (mp3)
 
     Returns:
         生成結果（音声ファイルパスを含む辞書）
     """
     try:
+        tool_cfg = get_service().config.tools.generate_speech
+
+        # config のデフォルト値を適用（None のみフォールバック、falsy 値は維持）
+        voice = voice if voice is not None else tool_cfg.voice
+        language = language if language is not None else tool_cfg.language
+        audio_encoding = audio_encoding if audio_encoding is not None else tool_cfg.audio_encoding
+
         result = get_service().chirp.synthesize(
             text=text,
             voice=voice,

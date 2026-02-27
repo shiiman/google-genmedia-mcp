@@ -214,28 +214,37 @@ uvx --from git+https://github.com/shiiman/google-genmedia-mcp google-genmedia-mc
 
 ---
 
-## モデル設定
+## ツール・モデル設定
 
-`config.yaml` でモデルを追加・変更できます:
+`config.yaml` の `tools` セクションで、各ツールのデフォルト値とモデル一覧をカスタマイズできます:
 
 ```yaml
-models:
-  imagen:
-    default: "imagen-4.0-fast-generate-001"
-    available:
-      - id: "imagen-4.0-ultra-generate-001"
-        aliases: ["Imagen 4 Ultra"]
+tools:
+  generateImage:
+    defaultModel: "Nano Banana 2"       # デフォルトモデル（エイリアス or ID）
+    aspectRatio: "16:9"
+    numberOfImages: 1
+    outputMimeType: "image/png"
+    allowUnregistered: true              # 未登録モデル ID の直接指定を許可
+    models:
       - id: "imagen-4.0-generate-001"
-        aliases: ["Imagen 4"]
+        aliases: ["Imagen 4", "imagen-4.0"]
+      - id: "gemini-3.1-flash-image-preview"
+        aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
 
-  veo:
-    default: "veo-3.0-generate-preview"
-    available:
-      - id: "veo-3.0-generate-preview"
-        aliases: ["Veo 3"]
-      - id: "veo-2.0-generate-001"
-        aliases: ["Veo 2"]
+  generateVideo:
+    defaultModel: "Veo 3.1"
+    durationSeconds: 5
+    numberOfVideos: 1
+    models:
+      - id: "veo-3.1-generate-preview"
+        aliases: ["Veo 3.1", "veo-3.1"]
+    polling:
+      pollInterval: 15
+      pollTimeout: 600
 ```
+
+詳細は [config.example.yaml](config.example.yaml) を参照してください。
 
 ---
 
@@ -274,6 +283,14 @@ uv run mypy src/
 # サーバー起動
 uv run google-genmedia-mcp
 ```
+
+---
+
+## ドキュメント
+
+- [セットアップガイド](docs/SETUP.md) — インストール・認証・config.yaml の全設定項目
+- [対応モデル一覧](docs/MODELS.md) — Imagen / Gemini / Veo / Chirp / Lyria のモデル・エイリアス・料金参考
+- [ツール詳細仕様](docs/TOOLS.md) — 全 8 ツールのパラメータ・戻り値・使用例
 
 ---
 

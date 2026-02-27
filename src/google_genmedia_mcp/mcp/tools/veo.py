@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 def generate_video(
     prompt: str,
     model: str | None = None,
-    aspect_ratio: str = "16:9",
-    duration_seconds: int = 5,
-    number_of_videos: int = 1,
+    aspect_ratio: str | None = None,
+    duration_seconds: int | None = None,
+    number_of_videos: int | None = None,
 ) -> dict[str, Any]:
     """Veo モデルでテキストから動画を生成する。
 
@@ -30,17 +30,24 @@ def generate_video(
     Args:
         prompt: 生成する動画の説明テキスト
         model: 使用するモデル名またはエイリアス（省略時はデフォルトモデル）
-        aspect_ratio: アスペクト比 (16:9 / 9:16)
-        duration_seconds: 動画の長さ（秒、5〜8）
-        number_of_videos: 生成本数
+        aspect_ratio: アスペクト比 (16:9 / 9:16)。デフォルト: config 設定値 (16:9)
+        duration_seconds: 動画の長さ（秒、5〜8）。デフォルト: config 設定値 (5)
+        number_of_videos: 生成本数。デフォルト: config 設定値 (1)
 
     Returns:
         生成結果（動画ファイルパスを含む辞書）
     """
     try:
+        tool_cfg = get_service().config.tools.generate_video
+
+        # config のデフォルト値を適用（None のみフォールバック、falsy 値は維持）
+        aspect_ratio = aspect_ratio if aspect_ratio is not None else tool_cfg.aspect_ratio
+        duration_seconds = duration_seconds if duration_seconds is not None else tool_cfg.duration_seconds
+        number_of_videos = number_of_videos if number_of_videos is not None else tool_cfg.number_of_videos
+
         result = get_service().veo.generate_from_text(
             prompt=prompt,
-            model=model,
+            model=model,  # サービス層で resolve_model 経由でデフォルト解決
             aspect_ratio=aspect_ratio,
             duration_seconds=duration_seconds,
             number_of_videos=number_of_videos,
@@ -58,8 +65,8 @@ def generate_video_from_image(
     prompt: str,
     image_gcs_uri: str,
     model: str | None = None,
-    aspect_ratio: str = "16:9",
-    duration_seconds: int = 5,
+    aspect_ratio: str | None = None,
+    duration_seconds: int | None = None,
 ) -> dict[str, Any]:
     """Veo モデルで画像から動画を生成する（Image-to-Video）。
 
@@ -69,17 +76,23 @@ def generate_video_from_image(
         prompt: 動画の動きや内容を説明するテキスト
         image_gcs_uri: 参照画像の GCS URI (例: gs://bucket/image.jpg)
         model: 使用するモデル名またはエイリアス（省略時はデフォルトモデル）
-        aspect_ratio: アスペクト比 (16:9 / 9:16)
-        duration_seconds: 動画の長さ（秒）
+        aspect_ratio: アスペクト比 (16:9 / 9:16)。デフォルト: config 設定値 (16:9)
+        duration_seconds: 動画の長さ（秒）。デフォルト: config 設定値 (5)
 
     Returns:
         生成結果（動画ファイルパスを含む辞書）
     """
     try:
+        tool_cfg = get_service().config.tools.generate_video_from_image
+
+        # config のデフォルト値を適用（None のみフォールバック、falsy 値は維持）
+        aspect_ratio = aspect_ratio if aspect_ratio is not None else tool_cfg.aspect_ratio
+        duration_seconds = duration_seconds if duration_seconds is not None else tool_cfg.duration_seconds
+
         result = get_service().veo.generate_from_image(
             prompt=prompt,
             image_gcs_uri=image_gcs_uri,
-            model=model,
+            model=model,  # サービス層で resolve_model 経由でデフォルト解決
             aspect_ratio=aspect_ratio,
             duration_seconds=duration_seconds,
         )

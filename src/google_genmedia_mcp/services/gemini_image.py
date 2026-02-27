@@ -33,7 +33,7 @@ class GeminiImageService:
 
         allowUnregistered が True の場合は未登録モデルも許可する。
         """
-        return self._config.models.gemini.resolve(model, "Gemini モデル")
+        return self._config.tools.generate_image.resolve_model(model, "Gemini 画像モデル")
 
     def generate(
         self,
@@ -54,6 +54,13 @@ class GeminiImageService:
             生成結果（画像とテキストを含む場合あり）
         """
         from google.genai import types
+
+        if reference_image_gcs_uri and not reference_image_gcs_uri.startswith("gs://"):
+            raise GenerationError(
+                f"無効な GCS URI です: {reference_image_gcs_uri}",
+                "INVALID_GCS_URI",
+                hint="gs://bucket/path/image.jpg 形式で指定してください",
+            )
 
         resolved_model = self.resolve_model(model)
         logger.info(f"Gemini で画像生成を開始します (model={resolved_model})")

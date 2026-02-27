@@ -38,7 +38,7 @@ class LyriaService:
 
     def resolve_model(self, model: str | None) -> str:
         """モデル名またはエイリアスを解決する."""
-        return self._config.models.lyria.resolve(model, "Lyria モデル")
+        return self._config.tools.generate_music.resolve_model(model)
 
     def generate_music(
         self,

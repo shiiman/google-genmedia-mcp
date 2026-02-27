@@ -216,35 +216,61 @@ server:
   port: 8000               # SSE/HTTP 時のポート
   logLevel: "INFO"         # ログレベル
 
-# ===== モデル定義 =====
-models:
-  imagen:
-    default: "imagen-4.0-fast-generate-001"
-    available:
-      - id: "imagen-4.0-ultra-generate-001"
-        aliases: ["Imagen 4 Ultra", "imagen-4.0-ultra"]
+# ===== ツール別設定 =====
+tools:
+  generateImage:
+    defaultModel: "Nano Banana 2"    # デフォルトモデル（エイリアス or ID）
+    aspectRatio: "16:9"              # アスペクト比
+    numberOfImages: 1                # 生成枚数
+    outputMimeType: "image/png"      # 出力形式
+    allowUnregistered: true          # 未登録モデルの使用を許可
+    models:                          # 利用可能モデル一覧
+      - id: "imagen-4.0-generate-001"
+        aliases: ["Imagen 4", "imagen-4.0"]
+      - id: "gemini-3.1-flash-image-preview"
+        aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
       # ...
-  gemini:
-    default: "gemini-3.1-flash-image-preview"
-    allowUnregistered: true  # 未登録 Gemini モデルの使用を許可
-    available:
+  editImage:
+    defaultModel: "Imagen 4"         # 画像編集は Imagen のみ対応
+    editMode: "inpaint_insertion"
+    numberOfImages: 1
+    models:
+      # Imagen モデルのみ（Gemini は非対応）
+      - id: "imagen-4.0-generate-001"
+        aliases: ["Imagen 4", "imagen-4.0"]
       # ...
-  # 以下同様: veo, lyria
-
-# ===== Chirp TTS ボイス設定 =====
-chirp:
-  defaultVoice: "Kore"
-  defaultLanguage: "ja-JP"
-  voices:
-    - name: "Kore"
-      gender: "female"
+  generateVideo:
+    defaultModel: "Veo 3.1"
+    aspectRatio: "16:9"
+    durationSeconds: 5
+    numberOfVideos: 1
+    models:
+      - id: "veo-3.1-generate-preview"
+        aliases: ["Veo 3.1", "veo-3.1"]
+      # ...
+    polling:
+      pollInterval: 15               # ポーリング間隔（秒）
+      pollTimeout: 600               # タイムアウト（秒）
+  generateVideoFromImage:
+    defaultModel: "Veo 3.1"
+    # T2V と同じ Veo モデルを使用（ポーリング設定は個別管理可能）
     # ...
-
-# ===== Veo ポーリング設定 =====
-veo:
-  pollInterval: 15    # ポーリング間隔（秒）
-  pollTimeout: 600    # タイムアウト（秒）
+  generateSpeech:
+    audioEncoding: "mp3"
+    defaultVoice: "Kore"
+    defaultLanguage: "ja-JP"
+    voices:
+      - name: "Kore"
+        gender: "female"
+      # ...
+  generateMusic:
+    defaultModel: "Lyria 2"
+    models:
+      - id: "lyria-002"
+        aliases: ["Lyria 2", "lyria2"]
 ```
+
+> 全設定項目の完全版は [config.example.yaml](../config.example.yaml) を参照してください。
 
 ---
 
