@@ -111,10 +111,8 @@ class LyriaService:
 
             pb_value = struct_pb2.Value(struct_value=pb_struct)
 
-            request = aiplatform_v1.PredictRequest(
-                endpoint=endpoint,
-                instances=[pb_value],
-            )
+            request = aiplatform_v1.PredictRequest(endpoint=endpoint)
+            request._pb.instances.append(pb_value)
             response = ap_client.predict(request=request)
         except Exception as e:
             raise GenerationError(
