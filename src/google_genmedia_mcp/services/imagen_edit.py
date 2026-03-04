@@ -163,4 +163,7 @@ def _load_image(path_or_uri: str) -> object:
     if path_or_uri.startswith("gs://"):
         return GenAIImage(gcs_uri=path_or_uri)
     validated = _validate_local_path(path_or_uri)
-    return GenAIImage.from_file(location=str(validated))
+    image_bytes = validated.read_bytes()
+    suffix = validated.suffix.lower()
+    mime_type = "image/png" if suffix == ".png" else "image/jpeg"
+    return GenAIImage(image_bytes=image_bytes, mime_type=mime_type)
