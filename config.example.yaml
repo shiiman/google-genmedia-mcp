@@ -57,15 +57,12 @@ tools:
   editImage:
     editMode: "inpaint_insertion"
     numberOfImages: 1
-    defaultModel: "Imagen 4"
-    # 画像編集は Imagen API のみ対応（Gemini モデルは非対応）
+    defaultModel: "Imagen 3"
+    # 画像編集は Imagen 3 capability モデルのみ対応
+    # Imagen 4 の generate モデルは編集 API 非対応
     models:
-      - id: "imagen-4.0-ultra-generate-001"
-        aliases: ["Imagen 4 Ultra", "imagen-4.0-ultra"]
-      - id: "imagen-4.0-generate-001"
-        aliases: ["Imagen 4", "imagen-4.0"]
-      - id: "imagen-4.0-fast-generate-001"
-        aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
+      - id: "imagen-3.0-capability-001"
+        aliases: ["Imagen 3", "imagen-3.0"]
 
   generateVideo:
     aspectRatio: "16:9"

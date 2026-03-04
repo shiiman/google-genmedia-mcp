@@ -97,6 +97,16 @@ class ImagenEditService:
                         ),
                     )
                 )
+            elif edit_mode == "background_replacement":
+                # 背景置換はマスク必須: 自動背景検出マスクを追加
+                reference_images.append(
+                    types.MaskReferenceImage(
+                        reference_id=1,
+                        config=types.MaskReferenceConfig(
+                            mask_mode="MASK_MODE_BACKGROUND"  # type: ignore[arg-type]
+                        ),
+                    )
+                )
 
             edit_config = types.EditImageConfig(
                 edit_mode=api_edit_mode,  # type: ignore[arg-type]
