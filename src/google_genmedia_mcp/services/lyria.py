@@ -105,13 +105,15 @@ class LyriaService:
             from google.cloud import aiplatform_v1
             from google.protobuf import struct_pb2
 
-            pb_instance = struct_pb2.Struct()
+            pb_struct = struct_pb2.Struct()
             for k, v in instance.items():
-                pb_instance[k] = v
+                pb_struct[k] = v
+
+            pb_value = struct_pb2.Value(struct_value=pb_struct)
 
             request = aiplatform_v1.PredictRequest(
                 endpoint=endpoint,
-                instances=[pb_instance],
+                instances=[pb_value],
             )
             response = ap_client.predict(request=request)
         except Exception as e:
