@@ -140,10 +140,12 @@ class VeoService:
                 generate_audio=generate_audio,
                 constraints=constraints,
             )
+            # GCS URI から MIME タイプを推定
+            mime_type = "image/png" if image_gcs_uri.lower().endswith(".png") else "image/jpeg"
             operation = self._client.genai.models.generate_videos(
                 model=resolved_model,
                 prompt=prompt,
-                image=types.Image(gcs_uri=image_gcs_uri),
+                image=types.Image(gcs_uri=image_gcs_uri, mime_type=mime_type),
                 config=config_dict,
             )
             operation = self._poll_operation(operation, polling_cfg)
