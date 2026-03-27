@@ -58,6 +58,9 @@ oauth_token.json
 # 出力ディレクトリ
 genmedia-output/
 
+# Claude Code
+.claude/tmp/
+
 # IDE
 .idea/
 .vscode/

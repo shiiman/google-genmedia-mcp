@@ -82,8 +82,12 @@ tools:
     defaultVoice: "Kore"
     defaultLanguage: "ja-JP"
   generateMusic:
-    defaultModel: "Lyria 2"
+    defaultModel: "Lyria 3 Pro"
     models:
+      - id: "lyria-3-pro-preview"
+        aliases: ["Lyria 3 Pro", "lyria-3-pro"]
+      - id: "lyria-3-clip-preview"
+        aliases: ["Lyria 3 Clip", "lyria-3-clip"]
       - id: "lyria-002"
         aliases: ["Lyria 2", "lyria2"]
 """
@@ -408,11 +412,17 @@ class TestVeoServiceValidateParams:
         assert "INVALID_PARAMETER" in str(exc_info.value.debug_code)
         assert "アスペクト比" in str(exc_info.value)
 
+    def test_veo3_allows_both_aspect_ratios(self) -> None:
+        """Veo 3 は 16:9 と 9:16 の両方を許可することを検証."""
+        constraints = get_veo_constraints("veo-3.0-generate-preview")
+        VeoService._validate_params("veo-3.0-generate-preview", constraints, "16:9", 8)
+        VeoService._validate_params("veo-3.0-generate-preview", constraints, "9:16", 8)
+
     def test_veo3_invalid_aspect_ratio(self) -> None:
-        """Veo 3 では 9:16 がサポートされないことを検証."""
+        """Veo 3 で不正なアスペクト比がエラーになることを検証."""
         constraints = get_veo_constraints("veo-3.0-generate-preview")
         with pytest.raises(GenerationError):
-            VeoService._validate_params("veo-3.0-generate-preview", constraints, "9:16", 8)
+            VeoService._validate_params("veo-3.0-generate-preview", constraints, "4:3", 8)
 
     def test_veo31_allows_both_aspect_ratios(self) -> None:
         """Veo 3.1 は 16:9 と 9:16 の両方を許可することを検証."""
@@ -441,10 +451,10 @@ class TestVeoServiceValidateParams:
         assert "最大" in str(exc_info.value)
 
     def test_veo3_exceeds_max_videos(self) -> None:
-        """Veo 3 で max_videos(2) を超えるとエラーになることを検証."""
+        """Veo 3 で max_videos(4) を超えるとエラーになることを検証."""
         constraints = get_veo_constraints("veo-3.0-generate-preview")
         with pytest.raises(GenerationError):
-            VeoService._validate_params("veo-3.0-generate-preview", constraints, "16:9", 8, 3)
+            VeoService._validate_params("veo-3.0-generate-preview", constraints, "16:9", 8, 5)
 
     def test_veo2_valid_params(self) -> None:
         """Veo 2 の有効なパラメータが通ることを検証."""
@@ -607,11 +617,13 @@ class TestLyriaServiceResolveModel:
         self.service = LyriaService(self.client_mock, self.config, self.storage_mock)
 
     def test_resolve_none_returns_default(self) -> None:
-        assert self.service.resolve_model(None) == "lyria-002"
+        assert self.service.resolve_model(None) == "lyria-3-pro-preview"
 
     def test_resolve_by_alias(self) -> None:
         assert self.service.resolve_model("Lyria 2") == "lyria-002"
         assert self.service.resolve_model("lyria2") == "lyria-002"
+        assert self.service.resolve_model("Lyria 3 Pro") == "lyria-3-pro-preview"
+        assert self.service.resolve_model("Lyria 3 Clip") == "lyria-3-clip-preview"
 
     def test_resolve_unknown_raises(self) -> None:
         with pytest.raises(ModelNotFoundError):
@@ -628,22 +640,109 @@ class TestLyriaServiceGenerateMusic:
         self.storage_mock.save_audio.return_value = "/tmp/music.wav"
         self.service = LyriaService(self.client_mock, self.config, self.storage_mock)
 
-    def test_api_key_raises_unsupported(self) -> None:
-        """API Key 方式で UnsupportedAuthMethodError が発生することを検証."""
+    def test_lyria2_api_key_raises_unsupported(self) -> None:
+        """Lyria 2 で API Key 方式は UnsupportedAuthMethodError になることを検証."""
         self.client_mock.has_cloud_credentials = False
 
         with pytest.raises(UnsupportedAuthMethodError):
-            self.service.generate_music(prompt="テスト音楽")
+            self.service.generate_music(prompt="テスト音楽", model="Lyria 2")
 
-    def test_cloud_credentials_allowed(self) -> None:
-        """クラウド認証あり・aiplatform None で AuthError が発生することを検証."""
+    def test_lyria2_cloud_credentials_allowed(self) -> None:
+        """Lyria 2 でクラウド認証あり・aiplatform None で AuthError が発生することを検証."""
         from google_genmedia_mcp.core.errors import AuthError
 
         self.client_mock.has_cloud_credentials = True
         self.client_mock.aiplatform = None
 
         with pytest.raises(AuthError):
+            self.service.generate_music(prompt="テスト音楽", model="Lyria 2")
+
+    def test_lyria3_uses_genai_client(self) -> None:
+        """Lyria 3 が genai クライアントの generateContent を使用することを検証."""
+        # genai クライアントのモックを設定
+        mock_genai = MagicMock()
+        mock_part_audio = MagicMock()
+        mock_part_audio.inline_data = MagicMock(data=b"fake-mp3", mime_type="audio/mp3")
+        mock_part_audio.text = None
+        mock_part_text = MagicMock()
+        mock_part_text.inline_data = None
+        mock_part_text.text = "[Verse] テスト歌詞"
+        mock_candidate = MagicMock()
+        mock_candidate.content.parts = [mock_part_audio, mock_part_text]
+        mock_genai.models.generate_content.return_value = MagicMock(
+            candidates=[mock_candidate]
+        )
+        self.client_mock.genai = mock_genai
+        self.storage_mock.save_audio.return_value = "/tmp/music.mp3"
+
+        result = self.service.generate_music(prompt="テスト音楽")
+
+        # genai.models.generate_content が呼ばれたことを確認
+        mock_genai.models.generate_content.assert_called_once()
+        assert result.model == "lyria-3-pro-preview"
+        assert len(result.audios) == 1
+        assert result.audios[0].audio_encoding == "mp3"
+        assert result.text == "[Verse] テスト歌詞"
+
+    def test_lyria3_no_output_raises_error(self) -> None:
+        """Lyria 3 が空のレスポンスを返した場合に GenerationError が発生することを検証."""
+        mock_genai = MagicMock()
+        mock_genai.models.generate_content.return_value = MagicMock(candidates=[])
+        self.client_mock.genai = mock_genai
+
+        with pytest.raises(GenerationError, match="音楽を生成しませんでした"):
             self.service.generate_music(prompt="テスト音楽")
+
+    def test_lyria3_content_none_raises_error(self) -> None:
+        """Lyria 3 で candidate.content が None の場合に GenerationError が発生することを検証."""
+        mock_genai = MagicMock()
+        mock_candidate = MagicMock()
+        mock_candidate.content = None
+        mock_genai.models.generate_content.return_value = MagicMock(
+            candidates=[mock_candidate]
+        )
+        self.client_mock.genai = mock_genai
+
+        with pytest.raises(GenerationError, match="音楽を生成しませんでした"):
+            self.service.generate_music(prompt="テスト音楽")
+
+    def test_lyria3_ignores_negative_prompt_with_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        """Lyria 3 で negative_prompt が渡された場合に警告ログが出ることを検証."""
+        mock_genai = MagicMock()
+        mock_part_audio = MagicMock()
+        mock_part_audio.inline_data = MagicMock(data=b"fake-mp3", mime_type="audio/mp3")
+        mock_part_audio.text = None
+        mock_candidate = MagicMock()
+        mock_candidate.content.parts = [mock_part_audio]
+        mock_genai.models.generate_content.return_value = MagicMock(
+            candidates=[mock_candidate]
+        )
+        self.client_mock.genai = mock_genai
+        self.storage_mock.save_audio.return_value = "/tmp/music.mp3"
+
+        with caplog.at_level("WARNING", logger="google_genmedia_mcp.services.lyria"):
+            self.service.generate_music(prompt="テスト", negative_prompt="ドラム")
+
+        assert any("negative_prompt" in msg for msg in caplog.messages)
+
+    def test_lyria3_ignores_seed_with_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        """Lyria 3 で seed が渡された場合に警告ログが出ることを検証."""
+        mock_genai = MagicMock()
+        mock_part_audio = MagicMock()
+        mock_part_audio.inline_data = MagicMock(data=b"fake-mp3", mime_type="audio/mp3")
+        mock_part_audio.text = None
+        mock_candidate = MagicMock()
+        mock_candidate.content.parts = [mock_part_audio]
+        mock_genai.models.generate_content.return_value = MagicMock(
+            candidates=[mock_candidate]
+        )
+        self.client_mock.genai = mock_genai
+        self.storage_mock.save_audio.return_value = "/tmp/music.mp3"
+
+        with caplog.at_level("WARNING", logger="google_genmedia_mcp.services.lyria"):
+            self.service.generate_music(prompt="テスト", seed=42)
+
+        assert any("seed" in msg for msg in caplog.messages)
 
 
 # ===== ChirpService =====
