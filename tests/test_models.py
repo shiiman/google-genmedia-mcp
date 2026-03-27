@@ -40,7 +40,7 @@ class TestGenMediaConfig:
         assert config.tools.edit_image.default_model == "Imagen 4"
         assert config.tools.generate_video.default_model == "Veo 3.1"
         assert config.tools.generate_video_from_image.default_model == "Veo 3.1"
-        assert config.tools.generate_music.default_model == "Lyria 2"
+        assert config.tools.generate_music.default_model == "Lyria 3 Pro"
 
     def test_model_list_defaults(self) -> None:
         """models リストがデフォルトで設定されることを検証."""
@@ -49,7 +49,7 @@ class TestGenMediaConfig:
         assert len(config.tools.edit_image.models) == 3  # Imagen のみ
         assert len(config.tools.generate_video.models) == 9
         assert len(config.tools.generate_video_from_image.models) == 9
-        assert len(config.tools.generate_music.models) == 1
+        assert len(config.tools.generate_music.models) == 3
         # generateImage は allowUnregistered=True がデフォルト
         assert config.tools.generate_image.allow_unregistered is True
 
@@ -149,6 +149,18 @@ class TestResolveModel:
         config = GenMediaConfig()
         assert config.tools.generate_music.resolve_model("Lyria 2") == "lyria-002"
         assert config.tools.generate_music.resolve_model("lyria2") == "lyria-002"
+
+    def test_lyria3_pro_resolve(self) -> None:
+        """Lyria 3 Pro のエイリアス解決を検証."""
+        config = GenMediaConfig()
+        assert config.tools.generate_music.resolve_model("Lyria 3 Pro") == "lyria-3-pro-preview"
+        assert config.tools.generate_music.resolve_model("lyria-3-pro") == "lyria-3-pro-preview"
+
+    def test_lyria3_clip_resolve(self) -> None:
+        """Lyria 3 Clip のエイリアス解決を検証."""
+        config = GenMediaConfig()
+        assert config.tools.generate_music.resolve_model("Lyria 3 Clip") == "lyria-3-clip-preview"
+        assert config.tools.generate_music.resolve_model("lyria-3-clip") == "lyria-3-clip-preview"
 
     def test_edit_image_resolve(self) -> None:
         """editImage の resolve_model を検証."""
@@ -256,7 +268,7 @@ class TestToolsConfig:
         assert len(config.tools.edit_image.models) == 3  # Imagen のみ
         assert len(config.tools.generate_video.models) == 9
         assert len(config.tools.generate_video_from_image.models) == 9
-        assert len(config.tools.generate_music.models) == 1
+        assert len(config.tools.generate_music.models) == 3
 
     def test_yaml_alias_with_default_model(self) -> None:
         """camelCase エイリアスで defaultModel・パラメータを設定できることを検証."""
@@ -344,15 +356,16 @@ class TestGetVeoConstraints:
         c = get_veo_constraints("veo-3.0-generate-preview")
         assert c is not None
         assert c.supports_audio is True
-        assert c.max_videos == 2
+        assert c.max_videos == 4
         assert "16:9" in c.valid_aspect_ratios
-        assert "9:16" not in c.valid_aspect_ratios
+        assert "9:16" in c.valid_aspect_ratios
 
     def test_veo_31_model(self) -> None:
         """Veo 3.1 モデルの制約を取得できることを検証."""
         c = get_veo_constraints("veo-3.1-generate-preview")
         assert c is not None
         assert c.supports_audio is True
+        assert c.max_videos == 4
         assert "9:16" in c.valid_aspect_ratios
 
     def test_veo_31_preferred_over_30(self) -> None:
@@ -361,9 +374,8 @@ class TestGetVeoConstraints:
         c30 = get_veo_constraints("veo-3.0-fast-generate-preview")
         assert c31 is not None
         assert c30 is not None
-        # veo-3.1 は 9:16 対応、veo-3.0 は非対応
-        assert "9:16" in c31.valid_aspect_ratios
-        assert "9:16" not in c30.valid_aspect_ratios
+        # veo-3.1 と veo-3.0 が別の制約オブジェクトにマッチすることを確認
+        assert c31 is not c30
 
     def test_unknown_model_returns_none(self) -> None:
         """未知モデルで None が返ることを検証."""

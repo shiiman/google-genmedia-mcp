@@ -112,13 +112,13 @@ VEO_MODEL_CONSTRAINTS: dict[str, VeoModelConstraints] = {
     ),
     "veo-3.0": VeoModelConstraints(
         valid_durations=[4, 6, 8],
-        max_videos=2,
-        valid_aspect_ratios=["16:9"],
+        max_videos=4,
+        valid_aspect_ratios=["16:9", "9:16"],
         supports_audio=True,
     ),
     "veo-3.1": VeoModelConstraints(
         valid_durations=[4, 6, 8],
-        max_videos=2,
+        max_videos=4,
         valid_aspect_ratios=["16:9", "9:16"],
         supports_audio=True,
     ),
@@ -262,6 +262,14 @@ def _default_veo_models() -> list[ModelEntry]:
 def _default_lyria_models() -> list[ModelEntry]:
     """Lyria モデルのデフォルト定義."""
     return [
+        ModelEntry(
+            id="lyria-3-pro-preview",
+            aliases=["Lyria 3 Pro", "lyria-3-pro"],
+        ),
+        ModelEntry(
+            id="lyria-3-clip-preview",
+            aliases=["Lyria 3 Clip", "lyria-3-clip"],
+        ),
         ModelEntry(
             id="lyria-002",
             aliases=["Lyria 2", "lyria2"],
@@ -409,7 +417,7 @@ class GenerateMusicToolConfig(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    default_model: str = Field(default="Lyria 2", alias="defaultModel")
+    default_model: str = Field(default="Lyria 3 Pro", alias="defaultModel")
     models: list[ModelEntry] = Field(default_factory=_default_lyria_models)
 
     def resolve_model(self, model: str | None, category_name: str = "Lyria モデル") -> str:
