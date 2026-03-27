@@ -91,7 +91,8 @@ class LyriaService:
         logger.info(f"Lyria 3 で音楽生成を開始します (model={resolved_model})")
 
         try:
-            client = self._client.genai
+            # Lyria 3 はグローバルエンドポイントが必要
+            client = self._client.genai_global
             response = client.models.generate_content(
                 model=resolved_model,
                 contents=prompt,
