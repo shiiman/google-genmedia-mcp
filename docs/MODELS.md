@@ -4,29 +4,9 @@ google-genmedia-mcp がサポートするモデルの一覧と料金参考情報
 
 ---
 
-## Imagen（画像生成）
-
-テキストから画像を生成するモデル。`generate_image` ツールで使用。
-
-| モデル ID | エイリアス | 特徴 | 参考料金 (Vertex AI) |
-|-----------|-----------|------|---------------------|
-| `imagen-4.0-ultra-generate-001` | `Imagen 4 Ultra`, `imagen-4.0-ultra` | 最高品質 | $0.06 / 枚 |
-| `imagen-4.0-generate-001` | `Imagen 4`, `imagen-4.0` | 標準品質（`edit_image` **デフォルト**） | $0.04 / 枚 |
-| `imagen-4.0-fast-generate-001` | `Imagen 4 Fast`, `imagen-4.0-fast` | 高速・低コスト | $0.02 / 枚 |
-
-### 主な機能
-
-- テキストから画像を生成（Text-to-Image）
-- アスペクト比指定（1:1 / 16:9 / 9:16 / 4:3 / 3:4）
-- 複数枚同時生成（1〜4 枚）
-- ネガティブプロンプト対応
-- PNG / JPEG 出力
-
----
-
 ## Gemini Image（画像生成・編集）
 
-Gemini モデルを使用した画像生成。`generate_image` ツールで model 未指定時のデフォルト（Nano Banana 2）として使用。`model` パラメータで明示的に指定することも可能。参照画像付き生成も対応。
+Gemini モデルを使用した画像生成・編集。`generate_image` ツールで使用。`model` 未指定時のデフォルトは Nano Banana 2。`reference_image` パラメータで参照画像を指定すると画像編集（スタイル変換・加工等）も可能。
 
 | モデル ID | エイリアス | 特徴 | 参考料金 (Vertex AI) |
 |-----------|-----------|------|---------------------|
@@ -41,7 +21,7 @@ Gemini モデルを使用した画像生成。`generate_image` ツールで mode
 ### 主な機能
 
 - テキストから画像を生成（Text-to-Image）
-- 参照画像を使用した画像生成（reference_image 指定時）
+- 参照画像を使用した画像編集・生成（`reference_image` 指定時）
 - アスペクト比指定
 
 ---
@@ -52,13 +32,12 @@ Gemini モデルを使用した画像生成。`generate_image` ツールで mode
 
 | モデル ID | エイリアス | 特徴 | 参考料金 (Vertex AI) |
 |-----------|-----------|------|---------------------|
-| `veo-3.1-generate-preview` | `Veo 3.1`, `veo-3.1`, `veo-3.1-generate-001` | 最新・高品質（**デフォルト**） | $0.35 / 秒 |
-| `veo-3.1-fast-generate-preview` | `Veo 3.1 Fast`, `veo-3.1-fast`, `veo-3.1-fast-generate-001` | 最新・高速 | $0.35 / 秒 |
-| `veo-3.0-generate-preview` | `Veo 3`, `veo-3.0`, `veo-3.0-generate-001` | 高品質 | $0.35 / 秒 |
-| `veo-3.0-fast-generate-preview` | `Veo 3 Fast`, `veo-3.0-fast`, `veo-3.0-fast-generate-001` | 高速 | $0.35 / 秒 |
+| `veo-3.1-generate-001` | `Veo 3.1`, `veo-3.1` | 最新・高品質（**デフォルト**） | $0.35 / 秒 |
+| `veo-3.1-fast-generate-001` | `Veo 3.1 Fast`, `veo-3.1-fast` | 最新・高速 | $0.35 / 秒 |
+| `veo-3.1-lite-generate-001` | `Veo 3.1 Lite`, `veo-3.1-lite` | 最新・軽量 | $0.35 / 秒 |
+| `veo-3.0-generate-001` | `Veo 3`, `veo-3.0` | 高品質 | $0.35 / 秒 |
+| `veo-3.0-fast-generate-001` | `Veo 3 Fast`, `veo-3.0-fast` | 高速 | $0.35 / 秒 |
 | `veo-2.0-generate-001` | `Veo 2`, `veo-2.0` | 旧世代 | $0.35 / 秒 |
-
-> ※ Vertex AI では `-001`（GA版）、AI Studio では `-preview`（プレビュー版）の ID が使われる場合があります。両方のエイリアスに対応しています。
 
 > ※ 料金は生成された動画の秒数に応じた従量課金です。参考値のため最新の公式料金ページをご確認ください。
 
@@ -141,18 +120,19 @@ Gemini モデルを使用した画像生成。`generate_image` ツールで mode
 
 ```
 # 例: generate_image でエイリアスを使用
-model: "Imagen 4 Ultra"    # -> imagen-4.0-ultra-generate-001
 model: "Nano Banana 2"      # -> gemini-3.1-flash-image-preview  ← デフォルト
+model: "Nano Banana Pro"    # -> gemini-3-pro-image-preview
 model: "Nano Banana"        # -> gemini-2.5-flash-image
-model: "Veo 3.1"            # -> veo-3.1-generate-preview
-model: "Veo 3"              # -> veo-3.0-generate-preview
-model: "Lyria 3 Pro"         # -> lyria-3-pro-preview
-model: "Lyria 3 Clip"        # -> lyria-3-clip-preview
-model: "Lyria 2"             # -> lyria-002
+model: "Veo 3.1"            # -> veo-3.1-generate-001
+model: "Veo 3.1 Fast"       # -> veo-3.1-fast-generate-001
+model: "Veo 3.1 Lite"       # -> veo-3.1-lite-generate-001
+model: "Veo 3"              # -> veo-3.0-generate-001
+model: "Lyria 3 Pro"        # -> lyria-3-pro-preview
+model: "Lyria 3 Clip"       # -> lyria-3-clip-preview
+model: "Lyria 2"            # -> lyria-002
 ```
 
 `generate_image` で `model` を省略した場合は config の `defaultModel`（デフォルト: Nano Banana 2）が使用されます。
-Imagen を使いたい場合は明示的にモデル名を指定してください（例: `model: "Imagen 4 Fast"`）。
 
 ### config.yaml でのモデルカスタマイズ
 
@@ -161,12 +141,12 @@ Imagen を使いたい場合は明示的にモデル名を指定してくださ�
 ```yaml
 tools:
   generateImage:
-    defaultModel: "Imagen 4 Fast"   # デフォルトを Imagen に変更
+    defaultModel: "Nano Banana 2"
     models:
-      - id: "imagen-4.0-fast-generate-001"
-        aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
       - id: "gemini-3.1-flash-image-preview"
         aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
+      - id: "gemini-3-pro-image-preview"
+        aliases: ["Nano Banana Pro", "gemini-3-pro-image"]
 ```
 
 > `allowUnregistered: true`（`generateImage` のデフォルト）を設定すると、`models` リストに未登録のモデル ID も直接指定可能です。

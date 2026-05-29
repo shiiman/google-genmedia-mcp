@@ -26,7 +26,7 @@ class AuthManager:
     def create_genai_client(self, config: GenMediaConfig) -> Any:
         """google-genai SDK のクライアントを作成する.
 
-        Phase 1 全ツール（Imagen / Gemini Image / Veo）で使用する。
+        Phase 1 全ツール（Gemini Image / Veo）で使用する。
 
         Raises:
             AuthError: 認証設定が不完全な場合

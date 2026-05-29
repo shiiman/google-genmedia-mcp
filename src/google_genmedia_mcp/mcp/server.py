@@ -15,7 +15,7 @@ logger = logging.getLogger("google_genmedia_mcp.mcp")
 # FastMCP サーバーインスタンス
 mcp = FastMCP(
     "Google GenMedia MCP Server",
-    instructions="Google の生成メディア API（Imagen, Gemini Image, Veo, Chirp, Lyria）を "
+    instructions="Google の生成メディア API（Gemini Image, Veo, Chirp, Lyria）を "
                  "提供する MCP サーバー。画像・動画・音声・音楽の生成が可能。",
 )
 
@@ -26,7 +26,6 @@ def _register_tools() -> None:
         avtool,  # noqa: F401
         chirp,  # noqa: F401
         image,  # noqa: F401
-        image_edit,  # noqa: F401
         lyria,  # noqa: F401
         server_info,  # noqa: F401
         veo,  # noqa: F401

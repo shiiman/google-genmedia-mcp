@@ -1,6 +1,6 @@
 # ツール詳細仕様
 
-google-genmedia-mcp が提供する全 8 ツールの詳細仕様です。
+google-genmedia-mcp が提供する全 7 ツールの詳細仕様です。
 
 ---
 
@@ -9,7 +9,6 @@ google-genmedia-mcp が提供する全 8 ツールの詳細仕様です。
 | ツール | API Key | Vertex AI ADC | OAuth |
 |--------|---------|---------------|-------|
 | `generate_image` | ✅ | ✅ | ✅ |
-| `edit_image` | ✅ | ✅ | ✅ |
 | `generate_video` | ✅ | ✅ | ✅ |
 | `generate_video_from_image` | ✅ | ✅ | ✅ |
 | `generate_speech` | ❌ | ✅ | ✅ |
@@ -23,25 +22,16 @@ google-genmedia-mcp が提供する全 8 ツールの詳細仕様です。
 
 ## generate_image
 
-テキストから画像を生成します。Imagen または Gemini モデルを自動切り替えします。
+テキストから画像を生成します。`reference_image` を指定すると参照画像編集（スタイル変換・加工等）も可能です。Gemini モデルを使用します。
 
 ### パラメータ
 
 | パラメータ | 型 | 必須 | デフォルト | 説明 |
 |-----------|-----|------|-----------|------|
 | `prompt` | string | ✅ | — | 生成する画像の説明テキスト |
-| `model` | string | — | Gemini デフォルト (Nano Banana 2) | モデル名またはエイリアス（Imagen/Gemini どちらも指定可） |
+| `model` | string | — | Nano Banana 2 (`gemini-3.1-flash-image-preview`) | モデル名またはエイリアス |
 | `aspect_ratio` | string | — | `"16:9"` | アスペクト比（`1:1` / `16:9` / `9:16` / `4:3` / `3:4`） |
-| `number_of_images` | integer | — | `1` | 生成枚数（1〜4）。Gemini 使用時は無視 |
-| `negative_prompt` | string | — | null | 除外したい要素。Gemini 使用時は無視 |
-| `output_mime_type` | string | — | `"image/png"` | 出力形式（`image/png` / `image/jpeg`）。Gemini 使用時は無視 |
-| `reference_image` | string | — | null | 参照画像（GCS URI: `gs://...` またはローカルパス）。指定すると Gemini モードに切り替わる |
-
-### モデル選択ロジック
-
-- `model` が `imagen-` で始まる、または Imagen エイリアスの場合 → Imagen API を使用
-- それ以外（未指定含む）→ Gemini API を使用（デフォルト: Nano Banana 2）
-- `reference_image` を指定した場合 → Gemini 参照画像付き生成モード
+| `reference_image` | string | — | null | 参照画像（GCS URI: `gs://...` またはローカルパス）。指定すると参照画像付き生成モードで動作 |
 
 ### 戻り値
 
@@ -78,50 +68,18 @@ prompt: "富士山の夕暮れ、水彩画スタイル"
 prompt: "かわいい猫のイラスト"
 aspect_ratio: "1:1"
 
-# Imagen を明示的に指定（複数枚生成対応）
-prompt: "都市の夜景、サイバーパンク"
-model: "Imagen 4 Fast"
-number_of_images: 4
-
 # Nano Banana Pro で高品質生成
 prompt: "プロフェッショナルな製品写真"
 model: "Nano Banana Pro"
 
-# 参照画像を使った Gemini 生成
+# 参照画像を使った画像編集（スタイル変換・加工）
 prompt: "この画像をアニメ風に変換して"
 reference_image: "gs://my-bucket/photo.jpg"
+
+# ローカルファイルを参照画像に使用
+prompt: "この人物を宇宙飛行士の格好にして"
+reference_image: "/Users/me/photo.jpg"
 ```
-
----
-
-## edit_image
-
-Imagen モデルで画像を編集します（インペインティング、アウトペインティング、背景置換など）。
-
-### パラメータ
-
-| パラメータ | 型 | 必須 | デフォルト | 説明 |
-|-----------|-----|------|-----------|------|
-| `prompt` | string | ✅ | — | 編集内容の説明テキスト |
-| `reference_image` | string | ✅ | — | 編集対象画像（GCS URI またはローカルパス） |
-| `edit_mode` | string | — | `"inpaint_insertion"` | 編集モード（下記参照） |
-| `mask_image` | string | — | null | マスク画像（inpaint 系で必須） |
-| `model` | string | — | Imagen 4 (`imagen-4.0-generate-001`) | モデル名またはエイリアス（Imagen のみ対応） |
-| `number_of_images` | integer | — | `1` | 生成枚数 |
-| `negative_prompt` | string | — | null | 除外したい要素 |
-
-### 編集モード
-
-| モード | 説明 | mask_image |
-|--------|------|-----------|
-| `inpaint_insertion` | マスク領域にオブジェクトを追加 | 必須 |
-| `inpaint_removal` | マスク領域のオブジェクトを除去 | 必須 |
-| `outpaint` | 画像の外側を拡張 | 不要 |
-| `background_replacement` | 背景を置換 | 不要 |
-
-### 戻り値
-
-`generate_image` と同じ形式。
 
 ---
 
@@ -148,11 +106,11 @@ Veo モデルでテキストから動画を生成します（Text-to-Video）。
   "videos": [
     {
       "file_path": "/path/to/output/video_20241201_120000.mp4",
-      "model": "veo-3.1-generate-preview",
+      "model": "veo-3.1-generate-001",
       "duration_seconds": 5.0
     }
   ],
-  "model": "veo-3.1-generate-preview"
+  "model": "veo-3.1-generate-001"
 }
 ```
 
@@ -330,7 +288,7 @@ MCP サーバーの情報と利用可能なツール・モデルの一覧を返�
   },
   "available_tools": [
     "generate_image", "generate_video", "generate_video_from_image",
-    "server_info", "edit_image", "generate_speech",
+    "server_info", "generate_speech",
     "generate_music", "combine_audio_video"
   ],
   "unavailable_tools": [],
@@ -339,11 +297,10 @@ MCP サーバーの情報と利用可能なツール・モデルの一覧を返�
     "generate_image": {
       "default_model": "Nano Banana 2",
       "models": [
-        { "id": "imagen-4.0-generate-001", "aliases": ["Imagen 4"] },
-        { "id": "gemini-3.1-flash-image-preview", "aliases": ["Nano Banana 2"] }
+        { "id": "gemini-3.1-flash-image-preview", "aliases": ["Nano Banana 2"] },
+        { "id": "gemini-3-pro-image-preview", "aliases": ["Nano Banana Pro"] }
       ]
     },
-    "edit_image": { "default_model": "Imagen 4", "models": [...] },
     "generate_video": { "default_model": "Veo 3.1", "models": [...] },
     "generate_video_from_image": { "default_model": "Veo 3.1", "models": [...] },
     "generate_music": { "default_model": "Lyria 3 Pro", "models": [...] }
