@@ -116,8 +116,29 @@ class GeminiImageService:
         )
 
 
+# 拡張子から MIME タイプへのマッピング（既定は image/jpeg）
+_IMAGE_MIME_BY_SUFFIX = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+    ".heic": "image/heic",
+    ".heif": "image/heif",
+}
+
+
+def _guess_image_mime_type(path_or_uri: str) -> str:
+    """パス／URI の拡張子から画像 MIME タイプを推定する（不明時は image/jpeg）."""
+    suffix = Path(path_or_uri).suffix.lower()
+    return _IMAGE_MIME_BY_SUFFIX.get(suffix, "image/jpeg")
+
+
 def _validate_local_path(path_str: str) -> Path:
-    """ローカルパスを検証してパストラバーサルを防ぐ.
+    """ローカルパスを正規化し、ファイルの存在と種別を検証する.
+
+    `Path.resolve()` で `..` やシンボリックリンクを展開した上で、
+    対象が実在するファイルであることを確認する。
 
     Raises:
         GenerationError: ファイルが存在しない、またはファイルでない場合
@@ -139,14 +160,16 @@ def _validate_local_path(path_str: str) -> Path:
 def _load_image_part(path_or_uri: str) -> Any:
     """パスまたは GCS URI から画像入力 Part を生成する.
 
-    ローカルパスの場合は検証を実施する。
+    ローカルパスの場合は存在・種別を検証する。MIME タイプは拡張子から推定する。
     """
     from google.genai import types
 
     if path_or_uri.startswith("gs://"):
-        return types.Part.from_uri(file_uri=path_or_uri, mime_type="image/jpeg")
+        return types.Part.from_uri(
+            file_uri=path_or_uri, mime_type=_guess_image_mime_type(path_or_uri)
+        )
     validated = _validate_local_path(path_or_uri)
     image_bytes = validated.read_bytes()
-    suffix = validated.suffix.lower()
-    mime_type = "image/png" if suffix == ".png" else "image/jpeg"
-    return types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+    return types.Part.from_bytes(
+        data=image_bytes, mime_type=_guess_image_mime_type(str(validated))
+    )

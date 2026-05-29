@@ -201,6 +201,7 @@ class TestGeminiImageServiceGenerate:
             reference_image=str(img_file),
         )
         assert len(result.images) == 1
+        self.client_mock.genai.models.generate_content.assert_called_once()
 
     def test_generate_local_reference_not_found_raises(self) -> None:
         """存在しないローカル参照画像でエラーになることを検証."""
