@@ -263,14 +263,56 @@ class TestGeminiImageServiceGenerate:
             self.service.generate(prompt="テスト")
         assert "GEMINI_GENERATION_ERROR" in str(exc_info.value.debug_code)
 
-    def test_generate_invalid_gcs_uri_raises(self) -> None:
-        """無効な GCS URI で GenerationError が発生することを検証."""
-        with pytest.raises(GenerationError) as exc_info:
+    def test_generate_with_gcs_reference(self) -> None:
+        """GCS URI 参照画像で generate_content が呼ばれることを検証."""
+        response = MagicMock()
+        part = MagicMock()
+        part.inline_data.data = b"img"
+        part.inline_data.mime_type = "image/png"
+        candidate = MagicMock()
+        candidate.content.parts = [part]
+        response.candidates = [candidate]
+        self.client_mock.genai.models.generate_content.return_value = response
+        self.storage_mock.save_image.return_value = "/tmp/gemini.png"
+
+        result = self.service.generate(
+            prompt="編集", model="gemini-2.5-flash-image",
+            reference_image="gs://bucket/in.png",
+        )
+        assert len(result.images) == 1
+        self.client_mock.genai.models.generate_content.assert_called_once()
+
+    def test_generate_with_local_reference(self, tmp_path: "Path") -> None:
+        """ローカル参照画像で generate_content が呼ばれることを検証."""
+        img_file = tmp_path / "in.png"
+        img_file.write_bytes(b"\x89PNG\r\n")
+        response = MagicMock()
+        part = MagicMock()
+        part.inline_data.data = b"img"
+        part.inline_data.mime_type = "image/png"
+        candidate = MagicMock()
+        candidate.content.parts = [part]
+        response.candidates = [candidate]
+        self.client_mock.genai.models.generate_content.return_value = response
+        self.storage_mock.save_image.return_value = "/tmp/gemini.png"
+
+        result = self.service.generate(
+            prompt="編集", model="gemini-2.5-flash-image",
+            reference_image=str(img_file),
+        )
+        assert len(result.images) == 1
+
+    def test_generate_local_reference_not_found_raises(self) -> None:
+        """存在しないローカル参照画像でエラーになることを検証."""
+        import pytest
+
+        from google_genmedia_mcp.core.errors import GenerationError
+
+        with pytest.raises(GenerationError):
             self.service.generate(
-                prompt="テスト",
-                reference_image_gcs_uri="/local/path/image.jpg",
+                prompt="編集", model="gemini-2.5-flash-image",
+                reference_image="/nonexistent/path.png",
             )
-        assert "INVALID_GCS_URI" in str(exc_info.value.debug_code)
 
     def test_generate_text_response(self) -> None:
         """テキストレスポンスが含まれる場合も処理できることを検証."""

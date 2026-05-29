@@ -1,11 +1,12 @@
-"""Gemini 画像生成サービスモジュール.
+"""Gemini 画像生成・編集サービスモジュール.
 
-Gemini モデルを使用した画像生成・編集を提供する。
+Gemini モデルを使用した画像生成・参照画像編集を提供する。
 """
 
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 from ..core.client import GenMediaClient
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiImageService:
-    """Gemini 画像生成サービス."""
+    """Gemini 画像生成・編集サービス."""
 
     def __init__(
         self,
@@ -30,10 +31,7 @@ class GeminiImageService:
         self._storage = storage
 
     def resolve_model(self, model: str | None) -> str:
-        """モデル名またはエイリアスを正式モデル ID に解決する.
-
-        allowUnregistered が True の場合は未登録モデルも許可する。
-        """
+        """モデル名またはエイリアスを正式モデル ID に解決する."""
         return self._config.tools.generate_image.resolve_model(model, "Gemini 画像モデル")
 
     def _get_genai_client(self, model_id: str) -> Any:
@@ -47,15 +45,15 @@ class GeminiImageService:
         self,
         prompt: str,
         model: str | None = None,
-        reference_image_gcs_uri: str | None = None,
+        reference_image: str | None = None,
         aspect_ratio: str | None = None,
     ) -> GenerationResult:
         """Gemini を使用して画像を生成・編集する.
 
         Args:
-            prompt: 生成プロンプト
+            prompt: 生成・編集の指示テキスト
             model: モデル名またはエイリアス
-            reference_image_gcs_uri: 参照画像の GCS URI（編集時に使用）
+            reference_image: 参照画像（ローカルパス または GCS URI）。指定時は編集モード
             aspect_ratio: アスペクト比
 
         Returns:
@@ -63,24 +61,13 @@ class GeminiImageService:
         """
         from google.genai import types
 
-        if reference_image_gcs_uri and not reference_image_gcs_uri.startswith("gs://"):
-            raise GenerationError(
-                f"無効な GCS URI です: {reference_image_gcs_uri}",
-                "INVALID_GCS_URI",
-                hint="gs://bucket/path/image.jpg 形式で指定してください",
-            )
-
         resolved_model = self.resolve_model(model)
         logger.info(f"Gemini で画像生成を開始します (model={resolved_model})")
 
         try:
             contents: list[object] = [prompt]
-            if reference_image_gcs_uri:
-                contents.append(
-                    types.Part.from_uri(
-                        file_uri=reference_image_gcs_uri, mime_type="image/jpeg"
-                    )
-                )
+            if reference_image:
+                contents.append(_load_image_part(reference_image))
 
             config_params: dict[str, object] = {"response_modalities": ["IMAGE", "TEXT"]}
             if aspect_ratio:
@@ -92,6 +79,8 @@ class GeminiImageService:
                 contents=contents,
                 config=types.GenerateContentConfig(**config_params),  # type: ignore[arg-type]
             )
+        except GenerationError:
+            raise
         except Exception as e:
             raise GenerationError(
                 f"Gemini 画像生成に失敗しました: {e!s}",
@@ -125,3 +114,39 @@ class GeminiImageService:
             text="\n".join(text_parts) if text_parts else None,
             model=resolved_model,
         )
+
+
+def _validate_local_path(path_str: str) -> Path:
+    """ローカルパスを検証してパストラバーサルを防ぐ.
+
+    Raises:
+        GenerationError: ファイルが存在しない、またはファイルでない場合
+    """
+    resolved = Path(path_str).resolve()
+    if not resolved.exists():
+        raise GenerationError(
+            f"ファイルが見つかりません: {path_str}",
+            "FILE_NOT_FOUND",
+        )
+    if not resolved.is_file():
+        raise GenerationError(
+            f"ファイルではありません: {path_str}",
+            "NOT_A_FILE",
+        )
+    return resolved
+
+
+def _load_image_part(path_or_uri: str) -> Any:
+    """パスまたは GCS URI から画像入力 Part を生成する.
+
+    ローカルパスの場合は検証を実施する。
+    """
+    from google.genai import types
+
+    if path_or_uri.startswith("gs://"):
+        return types.Part.from_uri(file_uri=path_or_uri, mime_type="image/jpeg")
+    validated = _validate_local_path(path_or_uri)
+    image_bytes = validated.read_bytes()
+    suffix = validated.suffix.lower()
+    mime_type = "image/png" if suffix == ".png" else "image/jpeg"
+    return types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
