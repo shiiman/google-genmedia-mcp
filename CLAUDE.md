@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Google GenMedia MCP Server - A Python-based MCP server for Google's generative media APIs (Imagen, Gemini Image, Veo, Chirp, Lyria).
+Google GenMedia MCP Server - A Python-based MCP server for Google's generative media APIs (Gemini Image, Veo, Chirp, Lyria).
 
 Inspired by the official [mcp-genmedia](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/mcp-genmedia) Go implementation, but rebuilt in Python with FastMCP for better configurability and easier installation via uvx.
 
@@ -54,8 +54,7 @@ The `tools` section in config.yaml manages per-tool defaults and model lists:
 
 ```yaml
 tools:
-  generateImage:    # defaultModel, aspectRatio, numberOfImages, outputMimeType, allowUnregistered, models
-  editImage:        # defaultModel (Imagen only), editMode, numberOfImages, models
+  generateImage:    # defaultModel, aspectRatio, allowUnregistered, models
   generateVideo:    # defaultModel, aspectRatio, durationSeconds, numberOfVideos, models, polling
   generateVideoFromImage:  # defaultModel, aspectRatio, durationSeconds, models, polling
   generateSpeech:   # audioEncoding, defaultVoice, defaultLanguage, voices
@@ -92,8 +91,7 @@ All tools are defined in `src/google_genmedia_mcp/mcp/tools/`.
 
 ### Image & Video (all auth methods)
 
-- `generate_image`: Text-to-image with Imagen or Gemini (auto-routed by model prefix)
-- `edit_image`: Image editing with Imagen (inpainting, outpainting, background replacement)
+- `generate_image`: Text-to-image and reference-image editing with Gemini
 - `generate_video`: Text-to-video with Veo models
 - `generate_video_from_image`: Image-to-video with Veo models (GCS URI required)
 - `server_info`: Server status, available tools/models, config diagnostics

@@ -71,7 +71,7 @@ cp config.example.yaml ~/.google-genmedia-mcp/config.yaml
 
 Google AI Studio で API Key を取得し、設定ファイルに記載します。
 
-**対応ツール**: `generate_image`, `edit_image`, `generate_video`, `generate_video_from_image`, `combine_audio_video`, `server_info`
+**対応ツール**: `generate_image`, `generate_video`, `generate_video_from_image`, `combine_audio_video`, `server_info`
 **非対応**: `generate_speech`, `generate_music`（Cloud 認証情報が必要）
 
 **設定例**:
@@ -221,23 +221,12 @@ tools:
   generateImage:
     defaultModel: "Nano Banana 2"    # デフォルトモデル（エイリアス or ID）
     aspectRatio: "16:9"              # アスペクト比
-    numberOfImages: 1                # 生成枚数
-    outputMimeType: "image/png"      # 出力形式
     allowUnregistered: true          # 未登録モデルの使用を許可
     models:                          # 利用可能モデル一覧
-      - id: "imagen-4.0-generate-001"
-        aliases: ["Imagen 4", "imagen-4.0"]
       - id: "gemini-3.1-flash-image-preview"
         aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
-      # ...
-  editImage:
-    defaultModel: "Imagen 4"         # 画像編集は Imagen のみ対応
-    editMode: "inpaint_insertion"
-    numberOfImages: 1
-    models:
-      # Imagen モデルのみ（Gemini は非対応）
-      - id: "imagen-4.0-generate-001"
-        aliases: ["Imagen 4", "imagen-4.0"]
+      - id: "gemini-3-pro-image-preview"
+        aliases: ["Nano Banana Pro", "gemini-3-pro-image"]
       # ...
   generateVideo:
     defaultModel: "Veo 3.1"
@@ -245,7 +234,7 @@ tools:
     durationSeconds: 5
     numberOfVideos: 1
     models:
-      - id: "veo-3.1-generate-preview"
+      - id: "veo-3.1-generate-001"
         aliases: ["Veo 3.1", "veo-3.1"]
       # ...
     polling:

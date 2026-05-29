@@ -1,6 +1,6 @@
 # google-genmedia-mcp
 
-Google の生成メディア API（Imagen, Gemini Image, Veo, Chirp, Lyria）を提供する MCP サーバー。
+Google の生成メディア API（Gemini Image, Veo, Chirp, Lyria）を提供する MCP サーバー。
 
 Python + FastMCP + hatchling で実装。`uvx` でワンコマンドインストール可能。
 
@@ -11,7 +11,7 @@ Python + FastMCP + hatchling で実装。`uvx` でワンコマンドインスト
 - **モデルを設定ファイルで管理** — `config.yaml` でモデル追加・変更が可能（再ビルド不要）
 - **3 つの認証方式** — API Key / Vertex AI / OAuth に対応
 - **uvx でインストール** — `pip install` 不要、`uvx` で直接実行
-- **対応機能** — 画像・動画生成 + 画像編集・TTS・音楽生成
+- **対応機能** — 画像生成・参照画像編集・動画生成・TTS・音楽生成
 
 ---
 
@@ -198,18 +198,17 @@ uvx --from git+https://github.com/shiiman/google-genmedia-mcp google-genmedia-mc
 
 | ツール | 説明 | 認証 |
 |--------|------|------|
-| `generate_image` | Imagen / Gemini でテキストから画像を生成 | 全方式 |
+| `generate_image` | Gemini でテキストから画像を生成（参照画像編集にも対応） | 全方式 |
 | `generate_video` | Veo でテキストから動画を生成 | 全方式 |
 | `generate_video_from_image` | Veo で画像から動画を生成 | 全方式 |
 | `server_info` | サーバー情報・利用可能ツール一覧 | 全方式 |
 
-### 画像編集・音声・音楽
+### 音声・音楽・ユーティリティ
 
 | ツール | 説明 | 認証 |
 |--------|------|------|
-| `edit_image` | Imagen で画像を編集（インペインティング等） | 全方式 |
 | `generate_speech` | Chirp 3 HD でテキストを音声に変換 | Vertex AI / OAuth |
-| `generate_music` | Lyria で音楽を生成（30 秒） | Vertex AI / OAuth |
+| `generate_music` | Lyria で音楽を生成 | Vertex AI / OAuth |
 | `combine_audio_video` | ffmpeg で動画と音声を合成 | 全方式 |
 
 ---
@@ -223,21 +222,19 @@ tools:
   generateImage:
     defaultModel: "Nano Banana 2"       # デフォルトモデル（エイリアス or ID）
     aspectRatio: "16:9"
-    numberOfImages: 1
-    outputMimeType: "image/png"
     allowUnregistered: true              # 未登録モデル ID の直接指定を許可
     models:
-      - id: "imagen-4.0-generate-001"
-        aliases: ["Imagen 4", "imagen-4.0"]
       - id: "gemini-3.1-flash-image-preview"
         aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
+      - id: "gemini-3-pro-image-preview"
+        aliases: ["Nano Banana Pro", "gemini-3-pro-image"]
 
   generateVideo:
     defaultModel: "Veo 3.1"
     durationSeconds: 5
     numberOfVideos: 1
     models:
-      - id: "veo-3.1-generate-preview"
+      - id: "veo-3.1-generate-001"
         aliases: ["Veo 3.1", "veo-3.1"]
     polling:
       pollInterval: 15
@@ -289,8 +286,8 @@ uv run google-genmedia-mcp
 ## ドキュメント
 
 - [セットアップガイド](docs/SETUP.md) — インストール・認証・config.yaml の全設定項目
-- [対応モデル一覧](docs/MODELS.md) — Imagen / Gemini / Veo / Chirp / Lyria のモデル・エイリアス・料金参考
-- [ツール詳細仕様](docs/TOOLS.md) — 全 8 ツールのパラメータ・戻り値・使用例
+- [対応モデル一覧](docs/MODELS.md) — Gemini / Veo / Chirp / Lyria のモデル・エイリアス・料金参考
+- [ツール詳細仕様](docs/TOOLS.md) — 全 7 ツールのパラメータ・戻り値・使用例
 
 ---
 
