@@ -182,7 +182,7 @@ class TestGeminiImageServiceGenerate:
         assert len(result.images) == 1
         self.client_mock.genai.models.generate_content.assert_called_once()
 
-    def test_generate_with_local_reference(self, tmp_path: "Path") -> None:
+    def test_generate_with_local_reference(self, tmp_path: Path) -> None:
         """ローカル参照画像で generate_content が呼ばれることを検証."""
         img_file = tmp_path / "in.png"
         img_file.write_bytes(b"\x89PNG\r\n")

@@ -37,7 +37,6 @@ class TestGenMediaConfig:
         """defaultModel のデフォルト値を検証."""
         config = GenMediaConfig()
         assert config.tools.generate_image.default_model == "Nano Banana 2"
-        assert config.tools.edit_image.default_model == "Imagen 4"
         assert config.tools.generate_video.default_model == "Veo 3.1"
         assert config.tools.generate_video_from_image.default_model == "Veo 3.1"
         assert config.tools.generate_music.default_model == "Lyria 3 Pro"
@@ -45,8 +44,7 @@ class TestGenMediaConfig:
     def test_model_list_defaults(self) -> None:
         """models リストがデフォルトで設定されることを検証."""
         config = GenMediaConfig()
-        assert len(config.tools.generate_image.models) == 6  # Imagen 3 + Gemini 3
-        assert len(config.tools.edit_image.models) == 3  # Imagen のみ
+        assert len(config.tools.generate_image.models) == 3  # Gemini のみ
         assert len(config.tools.generate_video.models) == 6
         assert len(config.tools.generate_video_from_image.models) == 6
         assert len(config.tools.generate_music.models) == 3
@@ -109,13 +107,13 @@ class TestResolveModel:
     def test_resolve_by_alias(self) -> None:
         """エイリアスからモデルを解決できることを検証."""
         config = GenMediaConfig()
-        assert config.tools.generate_image.resolve_model("Imagen 4 Fast") == "imagen-4.0-fast-generate-001"
         assert config.tools.generate_image.resolve_model("Nano Banana") == "gemini-2.5-flash-image"
+        assert config.tools.generate_image.resolve_model("Nano Banana 2") == "gemini-3.1-flash-image-preview"
 
     def test_resolve_by_id(self) -> None:
         """モデル ID で直接解決できることを検証."""
         config = GenMediaConfig()
-        assert config.tools.generate_image.resolve_model("imagen-4.0-generate-001") == "imagen-4.0-generate-001"
+        assert config.tools.generate_image.resolve_model("gemini-2.5-flash-image") == "gemini-2.5-flash-image"
 
     def test_resolve_model_not_found_raises_error(self) -> None:
         """未知のモデル名で ModelNotFoundError が発生することを検証."""
@@ -177,13 +175,6 @@ class TestResolveModel:
         config = GenMediaConfig()
         assert config.tools.generate_music.resolve_model("Lyria 3 Clip") == "lyria-3-clip-preview"
         assert config.tools.generate_music.resolve_model("lyria-3-clip") == "lyria-3-clip-preview"
-
-    def test_edit_image_resolve(self) -> None:
-        """editImage の resolve_model を検証."""
-        config = GenMediaConfig()
-        # デフォルト: "Imagen 4" → "imagen-4.0-generate-001"
-        assert config.tools.edit_image.resolve_model(None) == "imagen-4.0-generate-001"
-        assert config.tools.edit_image.resolve_model("Imagen 4 Fast") == "imagen-4.0-fast-generate-001"
 
     def test_custom_models_list(self) -> None:
         """カスタム models リストで解決できることを検証."""
@@ -261,11 +252,7 @@ class TestToolsConfig:
         """tools セクションのデフォルト値を検証."""
         config = GenMediaConfig()
         assert config.tools.generate_image.aspect_ratio == "16:9"
-        assert config.tools.generate_image.number_of_images == 1
-        assert config.tools.generate_image.output_mime_type == "image/png"
         assert config.tools.generate_image.default_model == "Nano Banana 2"
-        assert config.tools.edit_image.edit_mode == "inpaint_insertion"
-        assert config.tools.edit_image.number_of_images == 1
         assert config.tools.generate_video.aspect_ratio == "16:9"
         assert config.tools.generate_video.duration_seconds == 8
         assert config.tools.generate_video.number_of_videos == 1
@@ -280,8 +267,7 @@ class TestToolsConfig:
     def test_models_in_each_tool(self) -> None:
         """各ツールにモデル定義が含まれることを検証."""
         config = GenMediaConfig()
-        assert len(config.tools.generate_image.models) == 6
-        assert len(config.tools.edit_image.models) == 3  # Imagen のみ
+        assert len(config.tools.generate_image.models) == 3  # Gemini のみ
         assert len(config.tools.generate_video.models) == 6
         assert len(config.tools.generate_video_from_image.models) == 6
         assert len(config.tools.generate_music.models) == 3
@@ -290,26 +276,14 @@ class TestToolsConfig:
         """camelCase エイリアスで defaultModel・パラメータを設定できることを検証."""
         tc = ToolsConfig.model_validate({
             "generateImage": {
-                "defaultModel": "Imagen 4 Fast",
-                "aspectRatio": "1:1",
-                "numberOfImages": 4,
-            },
-            "generateVideo": {"durationSeconds": 8},
-            "generateSpeech": {
-                "voice": "Puck",
-                "language": "en-US",
-                "audioEncoding": "ogg_opus",
-            },
-            "generateMusic": {"defaultModel": "lyria-002"},
+                "defaultModel": "Nano Banana",
+                "models": [
+                    {"id": "gemini-2.5-flash-image", "aliases": ["Nano Banana"]},
+                ],
+            }
         })
-        assert tc.generate_image.default_model == "Imagen 4 Fast"
-        assert tc.generate_image.aspect_ratio == "1:1"
-        assert tc.generate_image.number_of_images == 4
-        assert tc.generate_video.duration_seconds == 8
-        assert tc.generate_speech.voice == "Puck"
-        assert tc.generate_speech.language == "en-US"
-        assert tc.generate_speech.audio_encoding == "ogg_opus"
-        assert tc.generate_music.default_model == "lyria-002"
+        assert tc.generate_image.default_model == "Nano Banana"
+        assert tc.generate_image.resolve_model(None) == "gemini-2.5-flash-image"
 
     def test_partial_override(self) -> None:
         """一部のみ上書きした場合、他はデフォルト値が維持されることを検証."""
@@ -319,10 +293,8 @@ class TestToolsConfig:
         assert tc.generate_image.aspect_ratio == "9:16"
         # 上書きしていないフィールドはデフォルト値
         assert tc.generate_image.default_model == "Nano Banana 2"
-        assert tc.generate_image.number_of_images == 1
-        assert tc.generate_image.output_mime_type == "image/png"
-        # モデルリストもデフォルト値が維持される
-        assert len(tc.generate_image.models) == 6
+        # モデルリストもデフォルト値が維持される（Gemini のみ 3 件）
+        assert len(tc.generate_image.models) == 3
         # 上書きしていないツールもデフォルト値
         assert tc.generate_video.aspect_ratio == "16:9"
 
@@ -425,7 +397,7 @@ class TestModelEntryGlobalFlag:
         # Gemini 3.x モデルは global=True
         assert tool_cfg.is_global_model("gemini-3.1-flash-image-preview") is True
         assert tool_cfg.is_global_model("gemini-3-pro-image-preview") is True
-        # Imagen モデルは global=False
-        assert tool_cfg.is_global_model("imagen-4.0-fast-generate-001") is False
+        # Gemini 2.5 は global=False
+        assert tool_cfg.is_global_model("gemini-2.5-flash-image") is False
         # 未登録モデルは False
         assert tool_cfg.is_global_model("unknown-model") is False

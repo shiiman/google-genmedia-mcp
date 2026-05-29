@@ -186,20 +186,8 @@ def _resolve_model(
 
 
 def _default_image_models() -> list[ModelEntry]:
-    """画像モデルのデフォルト定義（Imagen + Gemini）."""
+    """画像モデルのデフォルト定義（Gemini）."""
     return [
-        ModelEntry(
-            id="imagen-4.0-ultra-generate-001",
-            aliases=["Imagen 4 Ultra", "imagen-4.0-ultra"],
-        ),
-        ModelEntry(
-            id="imagen-4.0-generate-001",
-            aliases=["Imagen 4", "imagen-4.0"],
-        ),
-        ModelEntry(
-            id="imagen-4.0-fast-generate-001",
-            aliases=["Imagen 4 Fast", "imagen-4.0-fast"],
-        ),
         ModelEntry(
             id="gemini-3.1-flash-image-preview",
             aliases=["Nano Banana 2", "gemini-3.1-flash-image"],
@@ -288,8 +276,6 @@ class GenerateImageToolConfig(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     aspect_ratio: str = Field(default="16:9", alias="aspectRatio")
-    number_of_images: int = Field(default=1, alias="numberOfImages")
-    output_mime_type: str = Field(default="image/png", alias="outputMimeType")
     default_model: str = Field(default="Nano Banana 2", alias="defaultModel")
     models: list[ModelEntry] = Field(default_factory=_default_image_models)
     allow_unregistered: bool = Field(default=True, alias="allowUnregistered")
@@ -307,43 +293,6 @@ class GenerateImageToolConfig(BaseModel):
             if entry.id == model_id:
                 return entry.global_
         return False
-
-
-def _default_imagen_edit_models() -> list[ModelEntry]:
-    """画像編集用 Imagen モデルのデフォルト定義."""
-    return [
-        ModelEntry(
-            id="imagen-4.0-ultra-generate-001",
-            aliases=["Imagen 4 Ultra", "imagen-4.0-ultra"],
-        ),
-        ModelEntry(
-            id="imagen-4.0-generate-001",
-            aliases=["Imagen 4", "imagen-4.0"],
-        ),
-        ModelEntry(
-            id="imagen-4.0-fast-generate-001",
-            aliases=["Imagen 4 Fast", "imagen-4.0-fast"],
-        ),
-    ]
-
-
-class EditImageToolConfig(BaseModel):
-    """edit_image ツール設定."""
-
-    model_config = ConfigDict(populate_by_name=True)
-
-    edit_mode: str = Field(default="inpaint_insertion", alias="editMode")
-    number_of_images: int = Field(default=1, alias="numberOfImages")
-    default_model: str = Field(default="Imagen 4", alias="defaultModel")
-    models: list[ModelEntry] = Field(default_factory=_default_imagen_edit_models)
-    allow_unregistered: bool = Field(default=False, alias="allowUnregistered")
-
-    def resolve_model(self, model: str | None, category_name: str = "画像編集モデル") -> str:
-        """モデル名またはエイリアスを正式モデル ID に解決する."""
-        return _resolve_model(
-            model, self.default_model, self.models,
-            self.allow_unregistered, category_name,
-        )
 
 
 class GenerateVideoToolConfig(BaseModel):
@@ -423,9 +372,6 @@ class ToolsConfig(BaseModel):
 
     generate_image: GenerateImageToolConfig = Field(
         default_factory=GenerateImageToolConfig, alias="generateImage"
-    )
-    edit_image: EditImageToolConfig = Field(
-        default_factory=EditImageToolConfig, alias="editImage"
     )
     generate_video: GenerateVideoToolConfig = Field(
         default_factory=GenerateVideoToolConfig, alias="generateVideo"
