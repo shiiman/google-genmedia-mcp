@@ -221,40 +221,28 @@ def _default_veo_models() -> list[ModelEntry]:
     """Veo モデルのデフォルト定義."""
     return [
         ModelEntry(
-            id="veo-3.1-generate-preview",
-            aliases=["Veo 3.1", "veo-3.1", "veo-3.1-generate-001"],
+            id="veo-3.1-generate-001",
+            aliases=["Veo 3.1", "veo-3.1"],
         ),
         ModelEntry(
-            id="veo-3.1-fast-generate-preview",
-            aliases=["Veo 3.1 Fast", "veo-3.1-fast", "veo-3.1-fast-generate-001"],
+            id="veo-3.1-fast-generate-001",
+            aliases=["Veo 3.1 Fast", "veo-3.1-fast"],
         ),
         ModelEntry(
-            id="veo-3.0-generate-preview",
-            aliases=["Veo 3", "veo-3.0"],
+            id="veo-3.1-lite-generate-001",
+            aliases=["Veo 3.1 Lite", "veo-3.1-lite"],
         ),
         ModelEntry(
             id="veo-3.0-generate-001",
-            aliases=["veo-3.0-generate"],
-        ),
-        ModelEntry(
-            id="veo-3.0-fast-generate-preview",
-            aliases=["Veo 3 Fast", "veo-3.0-fast"],
+            aliases=["Veo 3", "veo-3.0"],
         ),
         ModelEntry(
             id="veo-3.0-fast-generate-001",
-            aliases=["veo-3.0-fast-generate"],
+            aliases=["Veo 3 Fast", "veo-3.0-fast"],
         ),
         ModelEntry(
             id="veo-2.0-generate-001",
             aliases=["Veo 2", "veo-2.0"],
-        ),
-        ModelEntry(
-            id="veo-2.0-generate-exp",
-            aliases=["Veo 2 Exp", "veo-2.0-exp"],
-        ),
-        ModelEntry(
-            id="veo-2.0-generate-preview",
-            aliases=["Veo 2 Preview", "veo-2.0-preview"],
         ),
     ]
 

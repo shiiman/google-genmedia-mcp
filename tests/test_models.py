@@ -47,8 +47,8 @@ class TestGenMediaConfig:
         config = GenMediaConfig()
         assert len(config.tools.generate_image.models) == 6  # Imagen 3 + Gemini 3
         assert len(config.tools.edit_image.models) == 3  # Imagen のみ
-        assert len(config.tools.generate_video.models) == 9
-        assert len(config.tools.generate_video_from_image.models) == 9
+        assert len(config.tools.generate_video.models) == 6
+        assert len(config.tools.generate_video_from_image.models) == 6
         assert len(config.tools.generate_music.models) == 3
         # generateImage は allowUnregistered=True がデフォルト
         assert config.tools.generate_image.allow_unregistered is True
@@ -140,9 +140,25 @@ class TestResolveModel:
         assert "Veo 3.1" in exc_info.value.hint
 
     def test_veo_resolve_none(self) -> None:
-        """Veo の model=None でデフォルトが返ることを検証."""
+        """Veo の model=None でデフォルト（GA ID）が返ることを検証."""
         config = GenMediaConfig()
-        assert config.tools.generate_video.resolve_model(None) == "veo-3.1-generate-preview"
+        assert config.tools.generate_video.resolve_model(None) == "veo-3.1-generate-001"
+
+    def test_veo_lite_resolve(self) -> None:
+        """veo-3.1-lite エイリアスが GA ID に解決されることを検証."""
+        config = GenMediaConfig()
+        assert config.tools.generate_video.resolve_model("Veo 3.1 Lite") == "veo-3.1-lite-generate-001"
+        assert config.tools.generate_video.resolve_model("veo-3.1-lite") == "veo-3.1-lite-generate-001"
+
+    def test_veo_deprecated_preview_removed(self) -> None:
+        """廃止 preview ID が解決不能（未登録扱い）になることを検証."""
+        import pytest
+
+        from google_genmedia_mcp.core.errors import ModelNotFoundError
+
+        config = GenMediaConfig()
+        with pytest.raises(ModelNotFoundError):
+            config.tools.generate_video.resolve_model("veo-3.1-generate-preview")
 
     def test_lyria_resolve_by_alias(self) -> None:
         """Lyria のエイリアス解決を検証."""
@@ -266,8 +282,8 @@ class TestToolsConfig:
         config = GenMediaConfig()
         assert len(config.tools.generate_image.models) == 6
         assert len(config.tools.edit_image.models) == 3  # Imagen のみ
-        assert len(config.tools.generate_video.models) == 9
-        assert len(config.tools.generate_video_from_image.models) == 9
+        assert len(config.tools.generate_video.models) == 6
+        assert len(config.tools.generate_video_from_image.models) == 6
         assert len(config.tools.generate_music.models) == 3
 
     def test_yaml_alias_with_default_model(self) -> None:
@@ -353,7 +369,7 @@ class TestGetVeoConstraints:
 
     def test_veo_3_model(self) -> None:
         """Veo 3 モデルの制約を取得できることを検証."""
-        c = get_veo_constraints("veo-3.0-generate-preview")
+        c = get_veo_constraints("veo-3.0-generate-001")
         assert c is not None
         assert c.supports_audio is True
         assert c.max_videos == 4
@@ -362,7 +378,7 @@ class TestGetVeoConstraints:
 
     def test_veo_31_model(self) -> None:
         """Veo 3.1 モデルの制約を取得できることを検証."""
-        c = get_veo_constraints("veo-3.1-generate-preview")
+        c = get_veo_constraints("veo-3.1-generate-001")
         assert c is not None
         assert c.supports_audio is True
         assert c.max_videos == 4
@@ -370,12 +386,19 @@ class TestGetVeoConstraints:
 
     def test_veo_31_preferred_over_30(self) -> None:
         """veo-3.1 が veo-3.0 より優先的にマッチすることを検証."""
-        c31 = get_veo_constraints("veo-3.1-fast-generate-preview")
-        c30 = get_veo_constraints("veo-3.0-fast-generate-preview")
+        c31 = get_veo_constraints("veo-3.1-fast-generate-001")
+        c30 = get_veo_constraints("veo-3.0-fast-generate-001")
         assert c31 is not None
         assert c30 is not None
         # veo-3.1 と veo-3.0 が別の制約オブジェクトにマッチすることを確認
         assert c31 is not c30
+
+    def test_veo_31_lite_model(self) -> None:
+        """veo-3.1-lite が veo-3.1 制約に解決されることを検証."""
+        c = get_veo_constraints("veo-3.1-lite-generate-001")
+        assert c is not None
+        assert c.valid_durations == [4, 6, 8]
+        assert c.supports_audio is True
 
     def test_unknown_model_returns_none(self) -> None:
         """未知モデルで None が返ることを検証."""
