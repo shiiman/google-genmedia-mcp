@@ -35,16 +35,8 @@ prompt:
 tools:
   generateImage:
     aspectRatio: "16:9"
-    numberOfImages: 1
-    outputMimeType: "image/png"
     defaultModel: "Nano Banana 2"
     models:
-      - id: "imagen-4.0-ultra-generate-001"
-        aliases: ["Imagen 4 Ultra", "imagen-4.0-ultra"]
-      - id: "imagen-4.0-generate-001"
-        aliases: ["Imagen 4", "imagen-4.0"]
-      - id: "imagen-4.0-fast-generate-001"
-        aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
       - id: "gemini-3.1-flash-image-preview"
         aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
         global: true  # Vertex AI ではグローバルエンドポイントが必要
@@ -54,18 +46,6 @@ tools:
       - id: "gemini-2.5-flash-image"
         aliases: ["Nano Banana", "gemini-2.5-flash-preview-image-generation"]
 
-  editImage:
-    editMode: "inpaint_insertion"
-    numberOfImages: 1
-    defaultModel: "Imagen 4"
-    models:
-      - id: "imagen-4.0-ultra-generate-001"
-        aliases: ["Imagen 4 Ultra", "imagen-4.0-ultra"]
-      - id: "imagen-4.0-generate-001"
-        aliases: ["Imagen 4", "imagen-4.0"]
-      - id: "imagen-4.0-fast-generate-001"
-        aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
-
   generateVideo:
     aspectRatio: "16:9"
     durationSeconds: 8
@@ -73,24 +53,18 @@ tools:
     generateAudio: null  # null = モデルに応じて自動（Veo 3+ は True、Veo 2 は無効）
     defaultModel: "Veo 3.1"
     models:
-      - id: "veo-3.1-generate-preview"
-        aliases: ["Veo 3.1", "veo-3.1", "veo-3.1-generate-001"]
-      - id: "veo-3.1-fast-generate-preview"
-        aliases: ["Veo 3.1 Fast", "veo-3.1-fast", "veo-3.1-fast-generate-001"]
-      - id: "veo-3.0-generate-preview"
-        aliases: ["Veo 3", "veo-3.0"]
+      - id: "veo-3.1-generate-001"
+        aliases: ["Veo 3.1", "veo-3.1"]
+      - id: "veo-3.1-fast-generate-001"
+        aliases: ["Veo 3.1 Fast", "veo-3.1-fast"]
+      - id: "veo-3.1-lite-generate-001"
+        aliases: ["Veo 3.1 Lite", "veo-3.1-lite"]
       - id: "veo-3.0-generate-001"
-        aliases: ["veo-3.0-generate"]
-      - id: "veo-3.0-fast-generate-preview"
-        aliases: ["Veo 3 Fast", "veo-3.0-fast"]
+        aliases: ["Veo 3", "veo-3.0"]
       - id: "veo-3.0-fast-generate-001"
-        aliases: ["veo-3.0-fast-generate"]
+        aliases: ["Veo 3 Fast", "veo-3.0-fast"]
       - id: "veo-2.0-generate-001"
         aliases: ["Veo 2", "veo-2.0"]
-      - id: "veo-2.0-generate-exp"
-        aliases: ["Veo 2 Exp", "veo-2.0-exp"]
-      - id: "veo-2.0-generate-preview"
-        aliases: ["Veo 2 Preview", "veo-2.0-preview"]
     polling:
       pollInterval: 15
       pollTimeout: 600
@@ -102,24 +76,18 @@ tools:
     generateAudio: null  # null = モデルに応じて自動（Veo 3+ は True、Veo 2 は無効）
     defaultModel: "Veo 3.1"
     models:
-      - id: "veo-3.1-generate-preview"
-        aliases: ["Veo 3.1", "veo-3.1", "veo-3.1-generate-001"]
-      - id: "veo-3.1-fast-generate-preview"
-        aliases: ["Veo 3.1 Fast", "veo-3.1-fast", "veo-3.1-fast-generate-001"]
-      - id: "veo-3.0-generate-preview"
-        aliases: ["Veo 3", "veo-3.0"]
+      - id: "veo-3.1-generate-001"
+        aliases: ["Veo 3.1", "veo-3.1"]
+      - id: "veo-3.1-fast-generate-001"
+        aliases: ["Veo 3.1 Fast", "veo-3.1-fast"]
+      - id: "veo-3.1-lite-generate-001"
+        aliases: ["Veo 3.1 Lite", "veo-3.1-lite"]
       - id: "veo-3.0-generate-001"
-        aliases: ["veo-3.0-generate"]
-      - id: "veo-3.0-fast-generate-preview"
-        aliases: ["Veo 3 Fast", "veo-3.0-fast"]
+        aliases: ["Veo 3", "veo-3.0"]
       - id: "veo-3.0-fast-generate-001"
-        aliases: ["veo-3.0-fast-generate"]
+        aliases: ["Veo 3 Fast", "veo-3.0-fast"]
       - id: "veo-2.0-generate-001"
         aliases: ["Veo 2", "veo-2.0"]
-      - id: "veo-2.0-generate-exp"
-        aliases: ["Veo 2 Exp", "veo-2.0-exp"]
-      - id: "veo-2.0-generate-preview"
-        aliases: ["Veo 2 Preview", "veo-2.0-preview"]
     polling:
       pollInterval: 15
       pollTimeout: 600
