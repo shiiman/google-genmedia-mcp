@@ -16,8 +16,6 @@ if TYPE_CHECKING:
     from .avtool import AvToolService
     from .chirp import ChirpService
     from .gemini_image import GeminiImageService
-    from .imagen import ImagenService
-    from .imagen_edit import ImagenEditService
     from .lyria import LyriaService
     from .storage import StorageService
     from .veo import VeoService
@@ -32,8 +30,6 @@ class GenMediaService:
         self._config = config or get_config()
         self._client: GenMediaClient | None = None
         self._storage_instance: StorageService | None = None
-        self._imagen_instance: ImagenService | None = None
-        self._imagen_edit_instance: ImagenEditService | None = None
         self._gemini_image_instance: GeminiImageService | None = None
         self._veo_instance: VeoService | None = None
         self._chirp_instance: ChirpService | None = None
@@ -54,22 +50,6 @@ class GenMediaService:
             from .storage import StorageService
             self._storage_instance = StorageService(self._config)
         return self._storage_instance
-
-    @property
-    def imagen(self) -> ImagenService:
-        """Imagen サービスを返す（遅延初期化）."""
-        if self._imagen_instance is None:
-            from .imagen import ImagenService
-            self._imagen_instance = ImagenService(self.client, self._config, self.storage)
-        return self._imagen_instance
-
-    @property
-    def imagen_edit(self) -> ImagenEditService:
-        """Imagen 編集サービスを返す（遅延初期化）."""
-        if self._imagen_edit_instance is None:
-            from .imagen_edit import ImagenEditService
-            self._imagen_edit_instance = ImagenEditService(self.client, self._config, self.storage)
-        return self._imagen_edit_instance
 
     @property
     def gemini_image(self) -> GeminiImageService:

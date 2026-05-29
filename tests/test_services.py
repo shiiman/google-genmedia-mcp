@@ -19,7 +19,6 @@ from google_genmedia_mcp.core.models import (
 from google_genmedia_mcp.services.avtool import AvToolService
 from google_genmedia_mcp.services.chirp import ChirpService
 from google_genmedia_mcp.services.gemini_image import GeminiImageService
-from google_genmedia_mcp.services.imagen import ImagenService
 from google_genmedia_mcp.services.lyria import LyriaService
 from google_genmedia_mcp.services.veo import VeoService
 
@@ -42,22 +41,11 @@ output:
   directory: "/tmp/genmedia-test"
 tools:
   generateImage:
-    defaultModel: "Imagen 4 Fast"
+    defaultModel: "Nano Banana"
     allowUnregistered: true
     models:
-      - id: "imagen-4.0-fast-generate-001"
-        aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
-      - id: "imagen-4.0-generate-001"
-        aliases: ["Imagen 4", "imagen-4.0"]
       - id: "gemini-2.5-flash-preview-image-generation"
         aliases: ["Nano Banana", "gemini-2.5-flash-image"]
-  editImage:
-    defaultModel: "Imagen 4 Fast"
-    models:
-      - id: "imagen-4.0-fast-generate-001"
-        aliases: ["Imagen 4 Fast", "imagen-4.0-fast"]
-      - id: "imagen-4.0-generate-001"
-        aliases: ["Imagen 4", "imagen-4.0"]
   generateVideo:
     defaultModel: "Veo 3"
     models:
@@ -104,93 +92,6 @@ def _make_storage_mock(tmp_path: Path) -> MagicMock:
     return mock
 
 
-# ===== ImagenService =====
-
-
-class TestImagenServiceResolveModel:
-    """ImagenService.resolve_model() のテスト."""
-
-    def setup_method(self) -> None:
-        self.config = _make_config()
-        self.client_mock = MagicMock()
-        self.storage_mock = MagicMock()
-        self.service = ImagenService(self.client_mock, self.config, self.storage_mock)
-
-    def test_resolve_none_returns_default(self) -> None:
-        """None 指定でデフォルトモデルが返ることを検証."""
-        assert self.service.resolve_model(None) == "imagen-4.0-fast-generate-001"
-
-    def test_resolve_by_id(self) -> None:
-        """モデル ID で正解 ID が返ることを検証."""
-        assert self.service.resolve_model("imagen-4.0-generate-001") == "imagen-4.0-generate-001"
-
-    def test_resolve_by_alias(self) -> None:
-        """エイリアスで正解 ID が返ることを検証."""
-        assert self.service.resolve_model("Imagen 4 Fast") == "imagen-4.0-fast-generate-001"
-        assert self.service.resolve_model("imagen-4.0-fast") == "imagen-4.0-fast-generate-001"
-
-    def test_resolve_unknown_allowed(self) -> None:
-        """allowUnregistered=True のため未知モデルもそのまま返ることを検証."""
-        result = self.service.resolve_model("unknown-model-xyz")
-        assert result == "unknown-model-xyz"
-
-    def test_resolve_unknown_raises_when_disallowed(self) -> None:
-        """allowUnregistered=False の場合に ModelNotFoundError が発生することを検証."""
-        config = _make_config()
-        config.tools.generate_image.allow_unregistered = False
-        service = ImagenService(self.client_mock, config, self.storage_mock)
-        with pytest.raises(ModelNotFoundError):
-            service.resolve_model("unknown-model-xyz")
-
-
-class TestImagenServiceGenerate:
-    """ImagenService.generate() のテスト."""
-
-    def setup_method(self) -> None:
-        self.config = _make_config()
-        self.client_mock = MagicMock()
-        self.storage_mock = MagicMock()
-        self.storage_mock.save_image.return_value = "/tmp/test.png"
-        self.service = ImagenService(self.client_mock, self.config, self.storage_mock)
-
-    def test_generate_calls_api(self) -> None:
-        """generate_images API が呼ばれることを検証."""
-        # レスポンスをモック
-        mock_img = MagicMock()
-        mock_img.image.image_bytes = b"fake-image-bytes"
-        mock_response = MagicMock()
-        mock_response.generated_images = [mock_img]
-        self.client_mock.genai.models.generate_images.return_value = mock_response
-
-        result = self.service.generate(prompt="テスト画像", number_of_images=1)
-
-        self.client_mock.genai.models.generate_images.assert_called_once()
-        assert len(result.images) == 1
-        assert result.images[0].file_path == "/tmp/test.png"
-
-    def test_generate_with_negative_prompt(self) -> None:
-        """ネガティブプロンプト付きで config に含まれることを検証."""
-        mock_img = MagicMock()
-        mock_img.image.image_bytes = b"fake-bytes"
-        mock_response = MagicMock()
-        mock_response.generated_images = [mock_img]
-        self.client_mock.genai.models.generate_images.return_value = mock_response
-
-        self.service.generate(prompt="テスト", negative_prompt="除外したい要素")
-
-        call_kwargs = self.client_mock.genai.models.generate_images.call_args
-        config_arg = call_kwargs.kwargs.get("config") or call_kwargs.args[2] if len(call_kwargs.args) > 2 else call_kwargs.kwargs["config"]
-        assert "negative_prompt" in config_arg
-
-    def test_generate_api_error_raises_generation_error(self) -> None:
-        """API エラー時に GenerationError が発生することを検証."""
-        self.client_mock.genai.models.generate_images.side_effect = Exception("API error")
-
-        with pytest.raises(GenerationError) as exc_info:
-            self.service.generate(prompt="テスト")
-        assert "IMAGEN_GENERATION_ERROR" in str(exc_info.value.debug_code)
-
-
 # ===== GeminiImageService =====
 
 
@@ -205,8 +106,7 @@ class TestGeminiImageServiceResolveModel:
 
     def test_resolve_none_returns_default(self) -> None:
         """None で共有デフォルトモデルが返ることを検証."""
-        # Imagen / Gemini 共通の generate_image 設定を使用
-        assert self.service.resolve_model(None) == "imagen-4.0-fast-generate-001"
+        assert self.service.resolve_model(None) == "gemini-2.5-flash-preview-image-generation"
 
     def test_resolve_by_alias(self) -> None:
         """エイリアスで解決されることを検証."""
