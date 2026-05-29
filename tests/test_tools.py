@@ -14,20 +14,6 @@ from google_genmedia_mcp.core.models import (
 )
 
 
-def _make_imagen_result(file_path: str = "/tmp/test.png") -> GenerationResult:
-    """テスト用 Imagen 結果を生成する."""
-    return GenerationResult(
-        images=[
-            GeneratedImage(
-                file_path=file_path,
-                mime_type="image/png",
-                model="imagen-4.0-fast-generate-001",
-            )
-        ],
-        model="imagen-4.0-fast-generate-001",
-    )
-
-
 def _make_gemini_result(file_path: str = "/tmp/gemini.png") -> GenerationResult:
     """テスト用 Gemini 結果を生成する."""
     return GenerationResult(
@@ -99,10 +85,10 @@ class TestGenerateImageTool:
         service_mock.gemini_image.generate.assert_called_once()
         assert "images" in result
 
-    def test_imagen_explicit_model(self) -> None:
-        """Imagen モデルを明示指定した場合に Imagen API が使われることを検証."""
+    def test_local_reference_uses_gemini(self) -> None:
+        """ローカル reference_image 指定時に Gemini に渡されることを検証."""
         service_mock = _make_service_mock()
-        service_mock.imagen.generate.return_value = _make_imagen_result()
+        service_mock.gemini_image.generate.return_value = _make_gemini_result()
 
         with patch(
             "google_genmedia_mcp.mcp.tools.image.get_service",
@@ -110,11 +96,11 @@ class TestGenerateImageTool:
         ):
             from google_genmedia_mcp.mcp.tools.image import generate_image
 
-            result = generate_image(prompt="テスト画像", model="imagen-4.0-fast-generate-001")
+            result = generate_image(prompt="編集して", reference_image="/tmp/in.png")
 
-        service_mock.imagen.generate.assert_called_once()
+        call_args = service_mock.gemini_image.generate.call_args
+        assert call_args.kwargs["reference_image"] == "/tmp/in.png"
         assert "images" in result
-        assert result["images"][0]["file_path"] == "/tmp/test.png"
 
     def test_gemini_model_prefix(self) -> None:
         """gemini- プレフィックスのモデルで Gemini API が使われることを検証."""
@@ -505,28 +491,3 @@ class TestPromptPrefixIntegration:
         call_args = service_mock.gemini_image.generate.call_args
         assert call_args.kwargs["prompt"] == "テスト画像"
 
-    def test_negative_prompt_not_affected(self) -> None:
-        """negative_prompt には prefix が適用されないことを検証."""
-        service_mock = _make_service_mock()
-        service_mock.config = GenMediaConfig.model_validate({
-            "prompt": {"prefix": "日本語で出力。"}
-        })
-        service_mock.imagen.generate.return_value = _make_imagen_result()
-
-        with patch(
-            "google_genmedia_mcp.mcp.tools._utils.get_service",
-            return_value=service_mock,
-        ), patch(
-            "google_genmedia_mcp.mcp.tools.image.get_service",
-            return_value=service_mock,
-        ):
-            from google_genmedia_mcp.mcp.tools.image import generate_image
-
-            generate_image(
-                prompt="テスト",
-                model="imagen-4.0-fast-generate-001",
-                negative_prompt="ぼやけた画像",
-            )
-
-        call_args = service_mock.imagen.generate.call_args
-        assert call_args.kwargs["negative_prompt"] == "ぼやけた画像"
