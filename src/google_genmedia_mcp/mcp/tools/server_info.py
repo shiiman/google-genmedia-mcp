@@ -37,7 +37,6 @@ def server_info() -> dict[str, Any]:
             "server_info",
         ]
         phase2_tools = [
-            "edit_image",
             "generate_speech",
             "generate_music",
             "combine_audio_video",
@@ -66,7 +65,6 @@ def server_info() -> dict[str, Any]:
 
         tools_models: dict[str, Any] = {
             "generate_image": _tool_models(config.tools.generate_image),
-            "edit_image": _tool_models(config.tools.edit_image),
             "generate_video": _tool_models(config.tools.generate_video),
             "generate_video_from_image": _tool_models(config.tools.generate_video_from_image),
             "generate_music": _tool_models(config.tools.generate_music),
