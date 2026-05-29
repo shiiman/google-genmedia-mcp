@@ -672,12 +672,12 @@ class TestLyriaServiceGenerateMusic:
         mock_genai.models.generate_content.return_value = MagicMock(
             candidates=[mock_candidate]
         )
-        self.client_mock.genai = mock_genai
+        self.client_mock.genai_global = mock_genai
         self.storage_mock.save_audio.return_value = "/tmp/music.mp3"
 
         result = self.service.generate_music(prompt="テスト音楽")
 
-        # genai.models.generate_content が呼ばれたことを確認
+        # genai_global.models.generate_content が呼ばれたことを確認
         mock_genai.models.generate_content.assert_called_once()
         assert result.model == "lyria-3-pro-preview"
         assert len(result.audios) == 1
@@ -688,7 +688,7 @@ class TestLyriaServiceGenerateMusic:
         """Lyria 3 が空のレスポンスを返した場合に GenerationError が発生することを検証."""
         mock_genai = MagicMock()
         mock_genai.models.generate_content.return_value = MagicMock(candidates=[])
-        self.client_mock.genai = mock_genai
+        self.client_mock.genai_global = mock_genai
 
         with pytest.raises(GenerationError, match="音楽を生成しませんでした"):
             self.service.generate_music(prompt="テスト音楽")
@@ -701,7 +701,7 @@ class TestLyriaServiceGenerateMusic:
         mock_genai.models.generate_content.return_value = MagicMock(
             candidates=[mock_candidate]
         )
-        self.client_mock.genai = mock_genai
+        self.client_mock.genai_global = mock_genai
 
         with pytest.raises(GenerationError, match="音楽を生成しませんでした"):
             self.service.generate_music(prompt="テスト音楽")
@@ -717,7 +717,7 @@ class TestLyriaServiceGenerateMusic:
         mock_genai.models.generate_content.return_value = MagicMock(
             candidates=[mock_candidate]
         )
-        self.client_mock.genai = mock_genai
+        self.client_mock.genai_global = mock_genai
         self.storage_mock.save_audio.return_value = "/tmp/music.mp3"
 
         with caplog.at_level("WARNING", logger="google_genmedia_mcp.services.lyria"):
@@ -736,7 +736,7 @@ class TestLyriaServiceGenerateMusic:
         mock_genai.models.generate_content.return_value = MagicMock(
             candidates=[mock_candidate]
         )
-        self.client_mock.genai = mock_genai
+        self.client_mock.genai_global = mock_genai
         self.storage_mock.save_audio.return_value = "/tmp/music.mp3"
 
         with caplog.at_level("WARNING", logger="google_genmedia_mcp.services.lyria"):
