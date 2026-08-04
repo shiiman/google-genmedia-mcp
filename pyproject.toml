@@ -18,7 +18,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "mcp[cli]>=1.0.0",
+    "mcp[cli]>=2.0.0",
     "google-genai>=1.0.0",
     "google-cloud-storage>=2.0.0",
     "google-auth-oauthlib>=1.0.0",
@@ -28,16 +28,6 @@ dependencies = [
     "pyyaml>=6.0.0",
     "structlog>=24.0.0",
     "platformdirs>=4.0.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-cov>=4.0.0",
-    "ruff>=0.1.0",
-    "mypy>=1.0.0",
-    "types-PyYAML>=6.0.0",
 ]
 
 [project.scripts]
@@ -66,6 +56,13 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [dependency-groups]
+# uv sync がデフォルトで導入する開発依存。extra 側に置くと uv sync で .venv に入らず、
+# PATH 上の別環境の pytest にフォールバックして検証結果が信頼できなくなるため集約する。
 dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
     "types-pyyaml>=6.0.12.20250915",
 ]

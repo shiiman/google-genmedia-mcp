@@ -1,6 +1,6 @@
 """MCP サーバーエントリーポイント.
 
-FastMCP を使用した google-genmedia-mcp サーバーの初期化・起動。
+MCP Python SDK 2.x の MCPServer を使用した google-genmedia-mcp サーバーの初期化・起動。
 """
 
 from __future__ import annotations
@@ -8,12 +8,12 @@ from __future__ import annotations
 import argparse
 import logging
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 logger = logging.getLogger("google_genmedia_mcp.mcp")
 
-# FastMCP サーバーインスタンス
-mcp = FastMCP(
+# MCP サーバーインスタンス
+mcp = MCPServer(
     "Google GenMedia MCP Server",
     instructions="Google の生成メディア API（Gemini Image, Veo, Chirp, Lyria）を "
                  "提供する MCP サーバー。画像・動画・音声・音楽の生成が可能。",
@@ -96,9 +96,9 @@ def main() -> None:
     if transport == "stdio":
         mcp.run(transport="stdio")
     elif transport == "sse":
-        mcp.run(transport="sse", host=host, port=port)  # type: ignore[call-arg]
+        mcp.run(transport="sse", host=host, port=port)
     else:
-        mcp.run(transport=transport)  # type: ignore[arg-type]
+        mcp.run(transport="streamable-http", host=host, port=port)
 
 
 if __name__ == "__main__":
