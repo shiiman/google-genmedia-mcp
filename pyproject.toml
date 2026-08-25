@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "google-genmedia-mcp"
 version = "0.1.0"
-description = "MCP server for Google GenMedia APIs (Imagen, Gemini Image, Veo, Chirp, Lyria)"
+description = "MCP server for Google GenMedia APIs (Gemini Image, Veo, Chirp, Lyria)"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"

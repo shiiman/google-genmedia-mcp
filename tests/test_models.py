@@ -44,7 +44,7 @@ class TestGenMediaConfig:
     def test_model_list_defaults(self) -> None:
         """models リストがデフォルトで設定されることを検証."""
         config = GenMediaConfig()
-        assert len(config.tools.generate_image.models) == 3  # Gemini のみ
+        assert len(config.tools.generate_image.models) == 4  # Gemini のみ
         assert len(config.tools.generate_video.models) == 6
         assert len(config.tools.generate_video_from_image.models) == 6
         assert len(config.tools.generate_music.models) == 3
@@ -56,7 +56,7 @@ class TestGenMediaConfig:
         config = GenMediaConfig()
         assert config.tools.generate_speech.default_voice == "Kore"
         assert config.tools.generate_speech.default_language == "ja-JP"
-        assert len(config.tools.generate_speech.voices) == 8
+        assert len(config.tools.generate_speech.voices) == 30
 
     def test_veo_polling_defaults(self) -> None:
         """Veo ポーリングのデフォルト値を検証."""
@@ -90,9 +90,9 @@ class TestModelEntry:
 
     def test_aliases(self) -> None:
         """エイリアスが正しく設定されることを検証."""
-        entry = ModelEntry(id="imagen-4.0-generate-001", aliases=["Imagen 4", "imagen-4.0"])
-        assert "Imagen 4" in entry.aliases
-        assert "imagen-4.0" in entry.aliases
+        entry = ModelEntry(id="gemini-3.1-flash-image", aliases=["Nano Banana 2", "nb2"])
+        assert "Nano Banana 2" in entry.aliases
+        assert "nb2" in entry.aliases
 
 
 class TestResolveModel:
@@ -102,13 +102,13 @@ class TestResolveModel:
         """model=None でデフォルトモデルが解決されることを検証."""
         config = GenMediaConfig()
         resolved = config.tools.generate_image.resolve_model(None)
-        assert resolved == "gemini-3.1-flash-image-preview"
+        assert resolved == "gemini-3.1-flash-image"
 
     def test_resolve_by_alias(self) -> None:
         """エイリアスからモデルを解決できることを検証."""
         config = GenMediaConfig()
         assert config.tools.generate_image.resolve_model("Nano Banana") == "gemini-2.5-flash-image"
-        assert config.tools.generate_image.resolve_model("Nano Banana 2") == "gemini-3.1-flash-image-preview"
+        assert config.tools.generate_image.resolve_model("Nano Banana 2") == "gemini-3.1-flash-image"
 
     def test_resolve_by_id(self) -> None:
         """モデル ID で直接解決できることを検証."""
@@ -205,9 +205,9 @@ class TestGenerationResult:
         image = GeneratedImage(
             file_path="/tmp/test.png",
             mime_type="image/png",
-            model="imagen-4.0-generate-001",
+            model="gemini-3.1-flash-image",
         )
-        result = GenerationResult(images=[image], model="imagen-4.0-generate-001")
+        result = GenerationResult(images=[image], model="gemini-3.1-flash-image")
         assert len(result.images) == 1
         assert result.images[0].file_path == "/tmp/test.png"
 
@@ -267,7 +267,7 @@ class TestToolsConfig:
     def test_models_in_each_tool(self) -> None:
         """各ツールにモデル定義が含まれることを検証."""
         config = GenMediaConfig()
-        assert len(config.tools.generate_image.models) == 3  # Gemini のみ
+        assert len(config.tools.generate_image.models) == 4  # Gemini のみ
         assert len(config.tools.generate_video.models) == 6
         assert len(config.tools.generate_video_from_image.models) == 6
         assert len(config.tools.generate_music.models) == 3
@@ -293,8 +293,8 @@ class TestToolsConfig:
         assert tc.generate_image.aspect_ratio == "9:16"
         # 上書きしていないフィールドはデフォルト値
         assert tc.generate_image.default_model == "Nano Banana 2"
-        # モデルリストもデフォルト値が維持される（Gemini のみ 3 件）
-        assert len(tc.generate_image.models) == 3
+        # モデルリストもデフォルト値が維持される（Gemini のみ 4 件）
+        assert len(tc.generate_image.models) == 4
         # 上書きしていないツールもデフォルト値
         assert tc.generate_video.aspect_ratio == "16:9"
 
@@ -395,8 +395,9 @@ class TestModelEntryGlobalFlag:
         config = GenMediaConfig()
         tool_cfg = config.tools.generate_image
         # Gemini 3.x モデルは global=True
-        assert tool_cfg.is_global_model("gemini-3.1-flash-image-preview") is True
-        assert tool_cfg.is_global_model("gemini-3-pro-image-preview") is True
+        assert tool_cfg.is_global_model("gemini-3.1-flash-image") is True
+        assert tool_cfg.is_global_model("gemini-3-pro-image") is True
+        assert tool_cfg.is_global_model("gemini-3.1-flash-lite-image") is True
         # Gemini 2.5 は global=False
         assert tool_cfg.is_global_model("gemini-2.5-flash-image") is False
         # 未登録モデルは False

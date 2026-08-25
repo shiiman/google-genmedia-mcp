@@ -37,14 +37,18 @@ tools:
     aspectRatio: "16:9"
     defaultModel: "Nano Banana 2"
     models:
-      - id: "gemini-3.1-flash-image-preview"
-        aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
+      - id: "gemini-3.1-flash-image"
+        aliases: ["Nano Banana 2"]
         global: true  # Vertex AI ではグローバルエンドポイントが必要
-      - id: "gemini-3-pro-image-preview"
-        aliases: ["Nano Banana Pro", "gemini-3-pro-image"]
+      - id: "gemini-3-pro-image"
+        aliases: ["Nano Banana Pro"]
+        global: true  # Vertex AI ではグローバルエンドポイントが必要
+      - id: "gemini-3.1-flash-lite-image"
+        aliases: ["Nano Banana 2 Lite", "gemini-3.1-flash-lite"]
         global: true  # Vertex AI ではグローバルエンドポイントが必要
       - id: "gemini-2.5-flash-image"
         aliases: ["Nano Banana", "gemini-2.5-flash-preview-image-generation"]
+        # 2026-10-02 に廃止予定。以降は global エンドポイント専用モデルのみ
 
   generateVideo:
     aspectRatio: "16:9"
@@ -96,23 +100,67 @@ tools:
     audioEncoding: "mp3"
     defaultVoice: "Kore"
     defaultLanguage: "ja-JP"
-    # Chirp ボイス一覧 (8 種)
+    # Chirp 3 HD ボイス一覧 (30 種)
     voices:
+      - name: "Achernar"
+        gender: "female"
+      - name: "Achird"
+        gender: "male"
+      - name: "Algenib"
+        gender: "male"
+      - name: "Algieba"
+        gender: "male"
+      - name: "Alnilam"
+        gender: "male"
       - name: "Aoede"
         gender: "female"
+      - name: "Autonoe"
+        gender: "female"
+      - name: "Callirrhoe"
+        gender: "female"
+      - name: "Charon"
+        gender: "male"
+      - name: "Despina"
+        gender: "female"
+      - name: "Enceladus"
+        gender: "male"
+      - name: "Erinome"
+        gender: "female"
+      - name: "Fenrir"
+        gender: "male"
+      - name: "Gacrux"
+        gender: "female"
+      - name: "Iapetus"
+        gender: "male"
       - name: "Kore"
+        gender: "female"
+      - name: "Laomedeia"
         gender: "female"
       - name: "Leda"
         gender: "female"
-      - name: "Zephyr"
+      - name: "Orus"
+        gender: "male"
+      - name: "Pulcherrima"
         gender: "female"
       - name: "Puck"
         gender: "male"
-      - name: "Charon"
+      - name: "Rasalgethi"
         gender: "male"
-      - name: "Fenrir"
+      - name: "Sadachbia"
         gender: "male"
-      - name: "Orus"
+      - name: "Sadaltager"
+        gender: "male"
+      - name: "Schedar"
+        gender: "male"
+      - name: "Sulafat"
+        gender: "female"
+      - name: "Umbriel"
+        gender: "male"
+      - name: "Vindemiatrix"
+        gender: "female"
+      - name: "Zephyr"
+        gender: "female"
+      - name: "Zubenelgenubi"
         gender: "male"
 
   generateMusic:

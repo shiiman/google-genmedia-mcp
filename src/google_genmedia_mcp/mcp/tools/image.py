@@ -29,7 +29,9 @@ def generate_image(
     Args:
         prompt: 生成・編集の指示テキスト
         model: 使用するモデル名またはエイリアス（省略時は config の defaultModel: Nano Banana 2）
-        aspect_ratio: アスペクト比 (1:1 / 16:9 / 9:16 / 4:3 / 3:4)。デフォルト: config 設定値 (16:9)
+        aspect_ratio: アスペクト比。モデルにより対応値が異なる
+                      (Gemini 3.x 系: 1:1 / 3:2 / 2:3 / 3:4 / 4:3 / 4:5 / 5:4 / 1:4 / 4:1 /
+                       1:8 / 8:1 / 9:16 / 16:9 / 21:9 / 9:21)。デフォルト: config 設定値 (16:9)
         reference_image: 参照画像（GCS URI: gs://bucket/file.png またはローカルパス）。
                          指定すると参照画像をもとに編集する
 
