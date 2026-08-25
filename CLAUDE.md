@@ -19,7 +19,7 @@ Inspired by the official [mcp-genmedia](https://github.com/GoogleCloudPlatform/v
 src/google_genmedia_mcp/
 ├── core/          # Client, models, errors
 ├── auth/          # AuthManager, OAuth flow
-├── services/      # Business logic (imagen, veo, chirp, lyria, etc.)
+├── services/      # Business logic (gemini_image, veo, chirp, lyria, etc.)
 ├── mcp/           # FastMCP server and tools
 └── utils/         # Config loader
 ```

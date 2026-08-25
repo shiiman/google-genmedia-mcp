@@ -186,16 +186,25 @@ def _resolve_model(
 
 
 def _default_image_models() -> list[ModelEntry]:
-    """画像モデルのデフォルト定義（Gemini）."""
+    """画像モデルのデフォルト定義（Gemini）.
+
+    Gemini 3.x 系は Vertex AI では global エンドポイント専用
+    （リージョン指定では 404 になる）。
+    """
     return [
         ModelEntry(
-            id="gemini-3.1-flash-image-preview",
-            aliases=["Nano Banana 2", "gemini-3.1-flash-image"],
+            id="gemini-3.1-flash-image",
+            aliases=["Nano Banana 2"],
             global_=True,  # type: ignore[call-arg]
         ),
         ModelEntry(
-            id="gemini-3-pro-image-preview",
-            aliases=["Nano Banana Pro", "gemini-3-pro-image"],
+            id="gemini-3-pro-image",
+            aliases=["Nano Banana Pro"],
+            global_=True,  # type: ignore[call-arg]
+        ),
+        ModelEntry(
+            id="gemini-3.1-flash-lite-image",
+            aliases=["Nano Banana 2 Lite", "gemini-3.1-flash-lite"],
             global_=True,  # type: ignore[call-arg]
         ),
         ModelEntry(
@@ -254,16 +263,42 @@ def _default_lyria_models() -> list[ModelEntry]:
 
 
 def _default_chirp_voices() -> list[ChirpVoice]:
-    """Chirp TTS ボイスのデフォルト定義."""
+    """Chirp 3 HD ボイスのデフォルト定義（全 30 種）.
+
+    公式ドキュメントの一覧順（アルファベット順）に合わせている。
+    実際のボイス名は `<locale>-Chirp3-HD-<name>` として合成される。
+    """
     return [
+        ChirpVoice(name="Achernar", gender="female"),
+        ChirpVoice(name="Achird", gender="male"),
+        ChirpVoice(name="Algenib", gender="male"),
+        ChirpVoice(name="Algieba", gender="male"),
+        ChirpVoice(name="Alnilam", gender="male"),
         ChirpVoice(name="Aoede", gender="female"),
-        ChirpVoice(name="Kore", gender="female"),
-        ChirpVoice(name="Leda", gender="female"),
-        ChirpVoice(name="Zephyr", gender="female"),
-        ChirpVoice(name="Puck", gender="male"),
+        ChirpVoice(name="Autonoe", gender="female"),
+        ChirpVoice(name="Callirrhoe", gender="female"),
         ChirpVoice(name="Charon", gender="male"),
+        ChirpVoice(name="Despina", gender="female"),
+        ChirpVoice(name="Enceladus", gender="male"),
+        ChirpVoice(name="Erinome", gender="female"),
         ChirpVoice(name="Fenrir", gender="male"),
+        ChirpVoice(name="Gacrux", gender="female"),
+        ChirpVoice(name="Iapetus", gender="male"),
+        ChirpVoice(name="Kore", gender="female"),
+        ChirpVoice(name="Laomedeia", gender="female"),
+        ChirpVoice(name="Leda", gender="female"),
         ChirpVoice(name="Orus", gender="male"),
+        ChirpVoice(name="Pulcherrima", gender="female"),
+        ChirpVoice(name="Puck", gender="male"),
+        ChirpVoice(name="Rasalgethi", gender="male"),
+        ChirpVoice(name="Sadachbia", gender="male"),
+        ChirpVoice(name="Sadaltager", gender="male"),
+        ChirpVoice(name="Schedar", gender="male"),
+        ChirpVoice(name="Sulafat", gender="female"),
+        ChirpVoice(name="Umbriel", gender="male"),
+        ChirpVoice(name="Vindemiatrix", gender="female"),
+        ChirpVoice(name="Zephyr", gender="female"),
+        ChirpVoice(name="Zubenelgenubi", gender="male"),
     ]
 
 

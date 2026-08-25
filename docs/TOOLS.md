@@ -29,8 +29,8 @@ google-genmedia-mcp が提供する全 7 ツールの詳細仕様です。
 | パラメータ | 型 | 必須 | デフォルト | 説明 |
 |-----------|-----|------|-----------|------|
 | `prompt` | string | ✅ | — | 生成する画像の説明テキスト |
-| `model` | string | — | Nano Banana 2 (`gemini-3.1-flash-image-preview`) | モデル名またはエイリアス |
-| `aspect_ratio` | string | — | `"16:9"` | アスペクト比（`1:1` / `16:9` / `9:16` / `4:3` / `3:4`） |
+| `model` | string | — | Nano Banana 2 (`gemini-3.1-flash-image`) | モデル名またはエイリアス |
+| `aspect_ratio` | string | — | `"16:9"` | アスペクト比。Gemini 3.x 系は 15 種対応（`1:1` / `3:2` / `2:3` / `3:4` / `4:3` / `4:5` / `5:4` / `1:4` / `4:1` / `1:8` / `8:1` / `9:16` / `16:9` / `21:9` / `9:21`）。モデルにより対応値が異なる |
 | `reference_image` | string | — | null | 参照画像（GCS URI: `gs://...` またはローカルパス）。指定すると参照画像付き生成モードで動作 |
 
 ### 戻り値
@@ -41,10 +41,10 @@ google-genmedia-mcp が提供する全 7 ツールの詳細仕様です。
     {
       "file_path": "/path/to/output/image_20241201_120000.png",
       "mime_type": "image/png",
-      "model": "gemini-3.1-flash-image-preview"
+      "model": "gemini-3.1-flash-image"
     }
   ],
-  "model": "gemini-3.1-flash-image-preview"
+  "model": "gemini-3.1-flash-image"
 }
 ```
 
@@ -96,7 +96,7 @@ Veo モデルでテキストから動画を生成します（Text-to-Video）。
 | `prompt` | string | ✅ | — | 生成する動画の説明テキスト |
 | `model` | string | — | Veo デフォルト | モデル名またはエイリアス |
 | `aspect_ratio` | string | — | `"16:9"` | アスペクト比（`16:9` / `9:16`） |
-| `duration_seconds` | integer | — | `5` | 動画の長さ（秒、5〜8） |
+| `duration_seconds` | integer | — | `8` | 動画の長さ（秒）。Veo 3.x 系は `4` / `6` / `8`、Veo 2 は `5`〜`8` |
 | `number_of_videos` | integer | — | `1` | 生成本数 |
 
 ### 戻り値
@@ -107,7 +107,7 @@ Veo モデルでテキストから動画を生成します（Text-to-Video）。
     {
       "file_path": "/path/to/output/video_20241201_120000.mp4",
       "model": "veo-3.1-generate-001",
-      "duration_seconds": 5.0
+      "duration_seconds": 8.0
     }
   ],
   "model": "veo-3.1-generate-001"
@@ -130,7 +130,7 @@ Veo モデルで画像から動画を生成します（Image-to-Video）。
 | `image_gcs_uri` | string | ✅ | — | 参照画像の GCS URI（例: `gs://bucket/image.jpg`） |
 | `model` | string | — | Veo デフォルト | モデル名またはエイリアス |
 | `aspect_ratio` | string | — | `"16:9"` | アスペクト比（`16:9` / `9:16`） |
-| `duration_seconds` | integer | — | `5` | 動画の長さ（秒） |
+| `duration_seconds` | integer | — | `8` | 動画の長さ（秒）。Veo 3.x 系は `4` / `6` / `8`、Veo 2 は `5`〜`8` |
 
 ### 戻り値
 
@@ -149,7 +149,7 @@ Chirp 3 HD でテキストを音声に変換します（Text-to-Speech）。
 | パラメータ | 型 | 必須 | デフォルト | 説明 |
 |-----------|-----|------|-----------|------|
 | `text` | string | ✅ | — | 音声に変換するテキスト |
-| `voice` | string | — | `"Kore"` | ボイス名（Aoede / Kore / Leda / Zephyr / Puck / Charon / Fenrir / Orus） |
+| `voice` | string | — | `"Kore"` | ボイス名（全 30 種。一覧は [MODELS.md](MODELS.md#利用可能ボイス全-30-種) 参照） |
 | `language` | string | — | `"ja-JP"` | 言語コード（`ja-JP`, `en-US` 等） |
 | `audio_encoding` | string | — | `"mp3"` | 出力フォーマット（`mp3` / `ogg_opus` / `pcm`） |
 
@@ -297,8 +297,8 @@ MCP サーバーの情報と利用可能なツール・モデルの一覧を返�
     "generate_image": {
       "default_model": "Nano Banana 2",
       "models": [
-        { "id": "gemini-3.1-flash-image-preview", "aliases": ["Nano Banana 2"] },
-        { "id": "gemini-3-pro-image-preview", "aliases": ["Nano Banana Pro"] }
+        { "id": "gemini-3.1-flash-image", "aliases": ["Nano Banana 2"] },
+        { "id": "gemini-3-pro-image", "aliases": ["Nano Banana Pro"] }
       ]
     },
     "generate_video": { "default_model": "Veo 3.1", "models": [...] },

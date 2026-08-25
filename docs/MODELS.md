@@ -8,21 +8,29 @@ google-genmedia-mcp がサポートするモデルの一覧と料金参考情報
 
 Gemini モデルを使用した画像生成・編集。`generate_image` ツールで使用。`model` 未指定時のデフォルトは Nano Banana 2。`reference_image` パラメータで参照画像を指定すると画像編集（スタイル変換・加工等）も可能。
 
-| モデル ID | エイリアス | 特徴 | 参考料金 (Vertex AI) |
-|-----------|-----------|------|---------------------|
-| `gemini-3.1-flash-image-preview` | `Nano Banana 2`, `gemini-3.1-flash-image` | 高速・高品質（**デフォルト**） | $0.045〜$0.151 / 枚 ※解像度による |
-| `gemini-3-pro-image-preview` | `Nano Banana Pro`, `gemini-3-pro-image` | 高品質・Pro グレード | $0.134〜$0.24 / 枚 ※解像度による |
-| `gemini-2.5-flash-image` | `Nano Banana`, `gemini-2.5-flash-preview-image-generation` | 旧世代 Flash | $0.039 / 枚 |
+| モデル ID | エイリアス | 特徴 | 対応解像度 | 参考料金 (Vertex AI) |
+|-----------|-----------|------|-----------|---------------------|
+| `gemini-3.1-flash-image` | `Nano Banana 2` | 高速・高品質（**デフォルト**） | 512 / 1K / 2K / 4K | $0.045〜$0.151 / 枚 ※解像度による |
+| `gemini-3-pro-image` | `Nano Banana Pro` | 高品質・Pro グレード | 1K / 2K / 4K | $0.134〜$0.24 / 枚 ※解像度による |
+| `gemini-3.1-flash-lite-image` | `Nano Banana 2 Lite`, `gemini-3.1-flash-lite` | 最速・最安 | 1K のみ | 最安（公式料金ページ参照） |
+| `gemini-2.5-flash-image` | `Nano Banana`, `gemini-2.5-flash-preview-image-generation` | 旧世代 Flash | 指定不可 | $0.039 / 枚 |
 
 > `allowUnregistered: true` が有効な場合、上記以外の Gemini モデル ID も指定可能です。
 > ※ `gemini-2.5-flash-preview-image-generation` は旧 preview ID。現在は `gemini-2.5-flash-image` が正式 ID。
-> ※ `gemini-3.1-flash-image` は AI Studio での旧表記。正式 ID は `gemini-3.1-flash-image-preview`。
+>
+> **⚠️ Vertex AI のエンドポイント要件**: Gemini 3.x 系の 3 モデルは **global エンドポイント専用**です
+> （`us-central1` 等のリージョン指定では 404）。本サーバーは `global: true` の設定に従って自動で切り替えます。
+>
+> **⚠️ 廃止予定**: `gemini-2.5-flash-image` は **2026-10-02 に廃止**予定です。
+> 唯一リージョンエンドポイントに対応するモデルのため、以降は global エンドポイントが必須になります。
 
 ### 主な機能
 
 - テキストから画像を生成（Text-to-Image）
 - 参照画像を使用した画像編集・生成（`reference_image` 指定時）
-- アスペクト比指定
+- アスペクト比指定（Gemini 3.x 系は 15 種:
+  `1:1` `3:2` `2:3` `3:4` `4:3` `4:5` `5:4` `1:4` `4:1` `1:8` `8:1` `9:16` `16:9` `21:9` `9:21`
+  ※ `gemini-3.1-flash-lite-image` は `9:21` 非対応、`gemini-2.5-flash-image` は 10 種）
 
 ---
 
@@ -61,18 +69,42 @@ Gemini モデルを使用した画像生成・編集。`generate_image` ツー�
 |---------|------|
 | Cloud Text-to-Speech | 標準料金に準拠（公式ページ参照） |
 
-### 利用可能ボイス
+### 利用可能ボイス（全 30 種）
+
+実際のボイス名は `<ロケール>-Chirp3-HD-<ボイス名>` として合成されます（例: `ja-JP-Chirp3-HD-Kore`）。
 
 | ボイス名 | 性別 |
 |---------|------|
+| Achernar | 女性 |
+| Achird | 男性 |
+| Algenib | 男性 |
+| Algieba | 男性 |
+| Alnilam | 男性 |
 | Aoede | 女性 |
-| Kore | 女性（**デフォルト**） |
-| Leda | 女性 |
-| Zephyr | 女性 |
-| Puck | 男性 |
+| Autonoe | 女性 |
+| Callirrhoe | 女性 |
 | Charon | 男性 |
+| Despina | 女性 |
+| Enceladus | 男性 |
+| Erinome | 女性 |
 | Fenrir | 男性 |
+| Gacrux | 女性 |
+| Iapetus | 男性 |
+| Kore | 女性（**デフォルト**） |
+| Laomedeia | 女性 |
+| Leda | 女性 |
 | Orus | 男性 |
+| Pulcherrima | 女性 |
+| Puck | 男性 |
+| Rasalgethi | 男性 |
+| Sadachbia | 男性 |
+| Sadaltager | 男性 |
+| Schedar | 男性 |
+| Sulafat | 女性 |
+| Umbriel | 男性 |
+| Vindemiatrix | 女性 |
+| Zephyr | 女性 |
+| Zubenelgenubi | 男性 |
 
 ### 主な機能
 
@@ -120,8 +152,9 @@ Gemini モデルを使用した画像生成・編集。`generate_image` ツー�
 
 ```
 # 例: generate_image でエイリアスを使用
-model: "Nano Banana 2"      # -> gemini-3.1-flash-image-preview  ← デフォルト
-model: "Nano Banana Pro"    # -> gemini-3-pro-image-preview
+model: "Nano Banana 2"      # -> gemini-3.1-flash-image  ← デフォルト
+model: "Nano Banana Pro"    # -> gemini-3-pro-image
+model: "Nano Banana 2 Lite" # -> gemini-3.1-flash-lite-image
 model: "Nano Banana"        # -> gemini-2.5-flash-image
 model: "Veo 3.1"            # -> veo-3.1-generate-001
 model: "Veo 3.1 Fast"       # -> veo-3.1-fast-generate-001
@@ -143,10 +176,12 @@ tools:
   generateImage:
     defaultModel: "Nano Banana 2"
     models:
-      - id: "gemini-3.1-flash-image-preview"
-        aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
-      - id: "gemini-3-pro-image-preview"
-        aliases: ["Nano Banana Pro", "gemini-3-pro-image"]
+      - id: "gemini-3.1-flash-image"
+        aliases: ["Nano Banana 2"]
+        global: true    # Gemini 3.x 系は global エンドポイント専用
+      - id: "gemini-3-pro-image"
+        aliases: ["Nano Banana Pro"]
+        global: true
 ```
 
 > `allowUnregistered: true`（`generateImage` のデフォルト）を設定すると、`models` リストに未登録のモデル ID も直接指定可能です。

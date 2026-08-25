@@ -223,15 +223,17 @@ tools:
     aspectRatio: "16:9"              # アスペクト比
     allowUnregistered: true          # 未登録モデルの使用を許可
     models:                          # 利用可能モデル一覧
-      - id: "gemini-3.1-flash-image-preview"
-        aliases: ["Nano Banana 2", "gemini-3.1-flash-image"]
-      - id: "gemini-3-pro-image-preview"
-        aliases: ["Nano Banana Pro", "gemini-3-pro-image"]
+      - id: "gemini-3.1-flash-image"
+        aliases: ["Nano Banana 2"]
+        global: true                     # Gemini 3.x 系は global エンドポイント専用
+      - id: "gemini-3-pro-image"
+        aliases: ["Nano Banana Pro"]
+        global: true
       # ...
   generateVideo:
     defaultModel: "Veo 3.1"
     aspectRatio: "16:9"
-    durationSeconds: 5
+    durationSeconds: 8
     numberOfVideos: 1
     models:
       - id: "veo-3.1-generate-001"
