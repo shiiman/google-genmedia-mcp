@@ -48,13 +48,13 @@ tools:
         global: true  # Vertex AI ではグローバルエンドポイントが必要
       - id: "gemini-2.5-flash-image"
         aliases: ["Nano Banana", "gemini-2.5-flash-preview-image-generation"]
-        # 2026-10-02 に廃止予定。以降は global エンドポイント専用モデルのみ
+        # 廃止予定（2026-10-02 または 10-16 に延期とされる。公式リリースノート参照）。以降は global エンドポイント専用モデルのみ
 
   generateVideo:
     aspectRatio: "16:9"
     durationSeconds: 8
     numberOfVideos: 1
-    generateAudio: null  # null = モデルに応じて自動（Veo 3+ は True、Veo 2 は無効）
+    generateAudio: null  # null = モデルに応じて自動（モデル仕様に従い通常は True）
     defaultModel: "Veo 3.1"
     models:
       - id: "veo-3.1-generate-001"
@@ -63,12 +63,6 @@ tools:
         aliases: ["Veo 3.1 Fast", "veo-3.1-fast"]
       - id: "veo-3.1-lite-generate-001"
         aliases: ["Veo 3.1 Lite", "veo-3.1-lite"]
-      - id: "veo-3.0-generate-001"
-        aliases: ["Veo 3", "veo-3.0"]
-      - id: "veo-3.0-fast-generate-001"
-        aliases: ["Veo 3 Fast", "veo-3.0-fast"]
-      - id: "veo-2.0-generate-001"
-        aliases: ["Veo 2", "veo-2.0"]
     polling:
       pollInterval: 15
       pollTimeout: 600
@@ -77,7 +71,7 @@ tools:
   generateVideoFromImage:
     aspectRatio: "16:9"
     durationSeconds: 8
-    generateAudio: null  # null = モデルに応じて自動（Veo 3+ は True、Veo 2 は無効）
+    generateAudio: null  # null = モデルに応じて自動（モデル仕様に従い通常は True）
     defaultModel: "Veo 3.1"
     models:
       - id: "veo-3.1-generate-001"
@@ -86,12 +80,6 @@ tools:
         aliases: ["Veo 3.1 Fast", "veo-3.1-fast"]
       - id: "veo-3.1-lite-generate-001"
         aliases: ["Veo 3.1 Lite", "veo-3.1-lite"]
-      - id: "veo-3.0-generate-001"
-        aliases: ["Veo 3", "veo-3.0"]
-      - id: "veo-3.0-fast-generate-001"
-        aliases: ["Veo 3 Fast", "veo-3.0-fast"]
-      - id: "veo-2.0-generate-001"
-        aliases: ["Veo 2", "veo-2.0"]
     polling:
       pollInterval: 15
       pollTimeout: 600

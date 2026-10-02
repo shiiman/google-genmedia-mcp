@@ -34,11 +34,11 @@ def _make_video_result(file_path: str = "/tmp/video.mp4") -> GenerationResult:
         videos=[
             GeneratedVideo(
                 file_path=file_path,
-                model="veo-3.0-generate-preview",
+                model="veo-3.1-generate-001",
                 duration_seconds=5.0,
             )
         ],
-        model="veo-3.0-generate-preview",
+        model="veo-3.1-generate-001",
     )
 
 

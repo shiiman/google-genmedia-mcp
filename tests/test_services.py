@@ -14,6 +14,7 @@ from google_genmedia_mcp.core.errors import (
 )
 from google_genmedia_mcp.core.models import (
     GenMediaConfig,
+    VeoModelConstraints,
     get_veo_constraints,
 )
 from google_genmedia_mcp.services.avtool import AvToolService
@@ -47,22 +48,22 @@ tools:
       - id: "gemini-2.5-flash-preview-image-generation"
         aliases: ["Nano Banana", "gemini-2.5-flash-image"]
   generateVideo:
-    defaultModel: "Veo 3"
+    defaultModel: "Veo 3.1"
     models:
-      - id: "veo-3.0-generate-preview"
-        aliases: ["Veo 3", "veo-3.0"]
-      - id: "veo-2.0-generate-001"
-        aliases: ["Veo 2", "veo-2.0"]
+      - id: "veo-3.1-generate-001"
+        aliases: ["Veo 3.1", "veo-3.1"]
+      - id: "veo-3.1-fast-generate-001"
+        aliases: ["Veo 3.1 Fast", "veo-3.1-fast"]
     polling:
       pollInterval: 15
       pollTimeout: 600
   generateVideoFromImage:
-    defaultModel: "Veo 3"
+    defaultModel: "Veo 3.1"
     models:
-      - id: "veo-3.0-generate-preview"
-        aliases: ["Veo 3", "veo-3.0"]
-      - id: "veo-2.0-generate-001"
-        aliases: ["Veo 2", "veo-2.0"]
+      - id: "veo-3.1-generate-001"
+        aliases: ["Veo 3.1", "veo-3.1"]
+      - id: "veo-3.1-fast-generate-001"
+        aliases: ["Veo 3.1 Fast", "veo-3.1-fast"]
     polling:
       pollInterval: 15
       pollTimeout: 600
@@ -245,10 +246,10 @@ class TestVeoServiceResolveModel:
         self.service = VeoService(self.client_mock, self.config, self.storage_mock)
 
     def test_resolve_none_returns_default(self) -> None:
-        assert self.service.resolve_model(None) == "veo-3.0-generate-preview"
+        assert self.service.resolve_model(None) == "veo-3.1-generate-001"
 
     def test_resolve_by_alias(self) -> None:
-        assert self.service.resolve_model("Veo 2") == "veo-2.0-generate-001"
+        assert self.service.resolve_model("Veo 3.1 Fast") == "veo-3.1-fast-generate-001"
 
     def test_resolve_unknown_raises(self) -> None:
         with pytest.raises(ModelNotFoundError):
@@ -256,8 +257,8 @@ class TestVeoServiceResolveModel:
 
     def test_resolve_model_i2v_uses_separate_config(self) -> None:
         """I2V 用 resolve_model が generateVideoFromImage 設定を使うことを検証."""
-        assert self.service.resolve_model_i2v(None) == "veo-3.0-generate-preview"
-        assert self.service.resolve_model_i2v("Veo 2") == "veo-2.0-generate-001"
+        assert self.service.resolve_model_i2v(None) == "veo-3.1-generate-001"
+        assert self.service.resolve_model_i2v("Veo 3.1 Fast") == "veo-3.1-fast-generate-001"
 
 
 class TestVeoServiceGenerate:
@@ -347,63 +348,29 @@ class TestVeoServiceValidateParams:
             VeoService._validate_params("unknown-model", None, "16:9", 0)
         assert "INVALID_PARAMETER" in str(exc_info.value.debug_code)
 
-    def test_veo2_invalid_aspect_ratio(self) -> None:
-        """Veo 2 で不正なアスペクト比がエラーになることを検証."""
-        constraints = get_veo_constraints("veo-2.0-generate-001")
-        with pytest.raises(GenerationError) as exc_info:
-            VeoService._validate_params("veo-2.0-generate-001", constraints, "4:3", 8)
-        assert "INVALID_PARAMETER" in str(exc_info.value.debug_code)
-        assert "アスペクト比" in str(exc_info.value)
-
-    def test_veo3_allows_both_aspect_ratios(self) -> None:
-        """Veo 3 は 16:9 と 9:16 の両方を許可することを検証."""
-        constraints = get_veo_constraints("veo-3.0-generate-preview")
-        VeoService._validate_params("veo-3.0-generate-preview", constraints, "16:9", 8)
-        VeoService._validate_params("veo-3.0-generate-preview", constraints, "9:16", 8)
-
-    def test_veo3_invalid_aspect_ratio(self) -> None:
-        """Veo 3 で不正なアスペクト比がエラーになることを検証."""
-        constraints = get_veo_constraints("veo-3.0-generate-preview")
+    def test_veo31_invalid_aspect_ratio(self) -> None:
+        """Veo 3.1 で不正なアスペクト比がエラーになることを検証."""
+        constraints = get_veo_constraints("veo-3.1-generate-001")
         with pytest.raises(GenerationError):
-            VeoService._validate_params("veo-3.0-generate-preview", constraints, "4:3", 8)
+            VeoService._validate_params("veo-3.1-generate-001", constraints, "4:3", 8)
 
     def test_veo31_allows_both_aspect_ratios(self) -> None:
         """Veo 3.1 は 16:9 と 9:16 の両方を許可することを検証."""
-        constraints = get_veo_constraints("veo-3.1-generate-preview")
-        VeoService._validate_params("veo-3.1-generate-preview", constraints, "16:9", 8)
-        VeoService._validate_params("veo-3.1-generate-preview", constraints, "9:16", 8)
+        constraints = get_veo_constraints("veo-3.1-generate-001")
+        VeoService._validate_params("veo-3.1-generate-001", constraints, "16:9", 8)
+        VeoService._validate_params("veo-3.1-generate-001", constraints, "9:16", 8)
 
-    def test_veo2_invalid_duration(self) -> None:
-        """Veo 2 で不正な duration がエラーになることを検証."""
-        constraints = get_veo_constraints("veo-2.0-generate-001")
-        with pytest.raises(GenerationError) as exc_info:
-            VeoService._validate_params("veo-2.0-generate-001", constraints, "16:9", 4)
-        assert "動画長" in str(exc_info.value)
-
-    def test_veo3_invalid_duration(self) -> None:
-        """Veo 3 で不正な duration（5 秒）がエラーになることを検証."""
-        constraints = get_veo_constraints("veo-3.0-generate-preview")
+    def test_veo31_invalid_duration(self) -> None:
+        """Veo 3.1 で不正な duration（5 秒）がエラーになることを検証."""
+        constraints = get_veo_constraints("veo-3.1-generate-001")
         with pytest.raises(GenerationError):
-            VeoService._validate_params("veo-3.0-generate-preview", constraints, "16:9", 5)
+            VeoService._validate_params("veo-3.1-generate-001", constraints, "16:9", 5)
 
-    def test_veo2_exceeds_max_videos(self) -> None:
-        """Veo 2 で max_videos を超えるとエラーになることを検証."""
-        constraints = get_veo_constraints("veo-2.0-generate-001")
-        with pytest.raises(GenerationError) as exc_info:
-            VeoService._validate_params("veo-2.0-generate-001", constraints, "16:9", 8, 5)
-        assert "最大" in str(exc_info.value)
-
-    def test_veo3_exceeds_max_videos(self) -> None:
-        """Veo 3 で max_videos(4) を超えるとエラーになることを検証."""
-        constraints = get_veo_constraints("veo-3.0-generate-preview")
+    def test_veo31_exceeds_max_videos(self) -> None:
+        """Veo 3.1 で max_videos(4) を超えるとエラーになることを検証."""
+        constraints = get_veo_constraints("veo-3.1-generate-001")
         with pytest.raises(GenerationError):
-            VeoService._validate_params("veo-3.0-generate-preview", constraints, "16:9", 8, 5)
-
-    def test_veo2_valid_params(self) -> None:
-        """Veo 2 の有効なパラメータが通ることを検証."""
-        constraints = get_veo_constraints("veo-2.0-generate-001")
-        VeoService._validate_params("veo-2.0-generate-001", constraints, "16:9", 8, 4)
-        VeoService._validate_params("veo-2.0-generate-001", constraints, "9:16", 5, 1)
+            VeoService._validate_params("veo-3.1-generate-001", constraints, "16:9", 8, 5)
 
 
 class TestVeoServiceBuildConfig:
@@ -415,9 +382,14 @@ class TestVeoServiceBuildConfig:
         self.storage_mock = MagicMock()
         self.service = VeoService(self.client_mock, self.config, self.storage_mock)
 
-    def test_veo2_no_generate_audio(self) -> None:
-        """Veo 2（supports_audio=False）では generate_audio が含まれないことを検証."""
-        constraints = get_veo_constraints("veo-2.0-generate-001")
+    def test_no_audio_model_omits_generate_audio(self) -> None:
+        """音声非対応モデル（supports_audio=False）では generate_audio が含まれないことを検証."""
+        constraints = VeoModelConstraints(
+            valid_durations=[8],
+            max_videos=1,
+            valid_aspect_ratios=["16:9"],
+            supports_audio=False,
+        )
         result = self.service._build_config(
             aspect_ratio="16:9",
             duration_seconds=8,
@@ -426,9 +398,14 @@ class TestVeoServiceBuildConfig:
         )
         assert "generate_audio" not in result
 
-    def test_veo2_ignores_explicit_generate_audio_true(self) -> None:
-        """Veo 2 で generate_audio=True を指定しても含まれないことを検証."""
-        constraints = get_veo_constraints("veo-2.0-generate-001")
+    def test_no_audio_model_ignores_explicit_true(self) -> None:
+        """音声非対応モデルで generate_audio=True を指定しても含まれないことを検証."""
+        constraints = VeoModelConstraints(
+            valid_durations=[8],
+            max_videos=1,
+            valid_aspect_ratios=["16:9"],
+            supports_audio=False,
+        )
         result = self.service._build_config(
             aspect_ratio="16:9",
             duration_seconds=8,
@@ -437,9 +414,14 @@ class TestVeoServiceBuildConfig:
         )
         assert "generate_audio" not in result
 
-    def test_veo2_ignores_explicit_generate_audio_false(self) -> None:
-        """Veo 2 で generate_audio=False を指定しても含まれないことを検証."""
-        constraints = get_veo_constraints("veo-2.0-generate-001")
+    def test_no_audio_model_ignores_explicit_false(self) -> None:
+        """音声非対応モデルで generate_audio=False を指定しても含まれないことを検証."""
+        constraints = VeoModelConstraints(
+            valid_durations=[8],
+            max_videos=1,
+            valid_aspect_ratios=["16:9"],
+            supports_audio=False,
+        )
         result = self.service._build_config(
             aspect_ratio="16:9",
             duration_seconds=8,
@@ -448,9 +430,9 @@ class TestVeoServiceBuildConfig:
         )
         assert "generate_audio" not in result
 
-    def test_veo3_defaults_generate_audio_true(self) -> None:
-        """Veo 3（supports_audio=True）でデフォルト generate_audio=True になることを検証."""
-        constraints = get_veo_constraints("veo-3.0-generate-preview")
+    def test_veo31_defaults_generate_audio_true(self) -> None:
+        """Veo 3.1（supports_audio=True）でデフォルト generate_audio=True になることを検証."""
+        constraints = get_veo_constraints("veo-3.1-generate-001")
         result = self.service._build_config(
             aspect_ratio="16:9",
             duration_seconds=8,
@@ -458,9 +440,9 @@ class TestVeoServiceBuildConfig:
         )
         assert result["generate_audio"] is True
 
-    def test_veo3_explicit_generate_audio_false(self) -> None:
-        """Veo 3 で generate_audio=False を明示指定できることを検証."""
-        constraints = get_veo_constraints("veo-3.0-generate-preview")
+    def test_veo31_explicit_generate_audio_false(self) -> None:
+        """Veo 3.1 で generate_audio=False を明示指定できることを検証."""
+        constraints = get_veo_constraints("veo-3.1-generate-001")
         result = self.service._build_config(
             aspect_ratio="16:9",
             duration_seconds=8,
