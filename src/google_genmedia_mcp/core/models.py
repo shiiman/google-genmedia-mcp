@@ -104,18 +104,6 @@ class VeoModelConstraints(BaseModel):
 
 
 VEO_MODEL_CONSTRAINTS: dict[str, VeoModelConstraints] = {
-    "veo-2.0": VeoModelConstraints(
-        valid_durations=[5, 6, 7, 8],
-        max_videos=4,
-        valid_aspect_ratios=["16:9", "9:16"],
-        supports_audio=False,
-    ),
-    "veo-3.0": VeoModelConstraints(
-        valid_durations=[4, 6, 8],
-        max_videos=4,
-        valid_aspect_ratios=["16:9", "9:16"],
-        supports_audio=True,
-    ),
     "veo-3.1": VeoModelConstraints(
         valid_durations=[4, 6, 8],
         max_videos=4,
@@ -128,8 +116,7 @@ VEO_MODEL_CONSTRAINTS: dict[str, VeoModelConstraints] = {
 def get_veo_constraints(model_id: str) -> VeoModelConstraints | None:
     """モデル ID からプレフィックスベースで Veo 制約を取得する.
 
-    長いプレフィックスから順にマッチさせることで、
-    "veo-3.1" が "veo-3.0" より優先的にマッチする。
+    長いプレフィックスから順にマッチさせる。
     """
     for prefix in sorted(VEO_MODEL_CONSTRAINTS, key=len, reverse=True):
         if model_id.startswith(prefix):
@@ -228,18 +215,6 @@ def _default_veo_models() -> list[ModelEntry]:
         ModelEntry(
             id="veo-3.1-lite-generate-001",
             aliases=["Veo 3.1 Lite", "veo-3.1-lite"],
-        ),
-        ModelEntry(
-            id="veo-3.0-generate-001",
-            aliases=["Veo 3", "veo-3.0"],
-        ),
-        ModelEntry(
-            id="veo-3.0-fast-generate-001",
-            aliases=["Veo 3 Fast", "veo-3.0-fast"],
-        ),
-        ModelEntry(
-            id="veo-2.0-generate-001",
-            aliases=["Veo 2", "veo-2.0"],
         ),
     ]
 

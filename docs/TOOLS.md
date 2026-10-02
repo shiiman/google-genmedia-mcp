@@ -96,7 +96,7 @@ Veo モデルでテキストから動画を生成します（Text-to-Video）。
 | `prompt` | string | ✅ | — | 生成する動画の説明テキスト |
 | `model` | string | — | Veo デフォルト | モデル名またはエイリアス |
 | `aspect_ratio` | string | — | `"16:9"` | アスペクト比（`16:9` / `9:16`） |
-| `duration_seconds` | integer | — | `8` | 動画の長さ（秒）。Veo 3.x 系は `4` / `6` / `8`、Veo 2 は `5`〜`8` |
+| `duration_seconds` | integer | — | `8` | 動画の長さ（秒）。`4` / `6` / `8` |
 | `number_of_videos` | integer | — | `1` | 生成本数 |
 
 ### 戻り値
@@ -130,7 +130,7 @@ Veo モデルで画像から動画を生成します（Image-to-Video）。
 | `image_gcs_uri` | string | ✅ | — | 参照画像の GCS URI（例: `gs://bucket/image.jpg`） |
 | `model` | string | — | Veo デフォルト | モデル名またはエイリアス |
 | `aspect_ratio` | string | — | `"16:9"` | アスペクト比（`16:9` / `9:16`） |
-| `duration_seconds` | integer | — | `8` | 動画の長さ（秒）。Veo 3.x 系は `4` / `6` / `8`、Veo 2 は `5`〜`8` |
+| `duration_seconds` | integer | — | `8` | 動画の長さ（秒）。`4` / `6` / `8` |
 
 ### 戻り値
 

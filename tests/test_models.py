@@ -45,8 +45,8 @@ class TestGenMediaConfig:
         """models リストがデフォルトで設定されることを検証."""
         config = GenMediaConfig()
         assert len(config.tools.generate_image.models) == 4  # Gemini のみ
-        assert len(config.tools.generate_video.models) == 6
-        assert len(config.tools.generate_video_from_image.models) == 6
+        assert len(config.tools.generate_video.models) == 3
+        assert len(config.tools.generate_video_from_image.models) == 3
         assert len(config.tools.generate_music.models) == 3
         # generateImage は allowUnregistered=True がデフォルト
         assert config.tools.generate_image.allow_unregistered is True
@@ -158,6 +158,17 @@ class TestResolveModel:
         with pytest.raises(ModelNotFoundError):
             config.tools.generate_video.resolve_model("veo-3.1-generate-preview")
 
+    def test_veo_retired_models_removed(self) -> None:
+        """Vertex で 404 の Veo 3.0 / 2.0 が解決不能になることを検証."""
+        import pytest
+
+        from google_genmedia_mcp.core.errors import ModelNotFoundError
+
+        config = GenMediaConfig()
+        for model in ["veo-3.0-generate-001", "Veo 3", "veo-2.0-generate-001", "Veo 2"]:
+            with pytest.raises(ModelNotFoundError):
+                config.tools.generate_video.resolve_model(model)
+
     def test_lyria_resolve_by_alias(self) -> None:
         """Lyria のエイリアス解決を検証."""
         config = GenMediaConfig()
@@ -268,8 +279,8 @@ class TestToolsConfig:
         """各ツールにモデル定義が含まれることを検証."""
         config = GenMediaConfig()
         assert len(config.tools.generate_image.models) == 4  # Gemini のみ
-        assert len(config.tools.generate_video.models) == 6
-        assert len(config.tools.generate_video_from_image.models) == 6
+        assert len(config.tools.generate_video.models) == 3
+        assert len(config.tools.generate_video_from_image.models) == 3
         assert len(config.tools.generate_music.models) == 3
 
     def test_yaml_alias_with_default_model(self) -> None:
@@ -331,23 +342,6 @@ class TestToolsConfig:
 class TestGetVeoConstraints:
     """get_veo_constraints() のテスト."""
 
-    def test_veo_2_model(self) -> None:
-        """Veo 2 モデルの制約を取得できることを検証."""
-        c = get_veo_constraints("veo-2.0-generate-001")
-        assert c is not None
-        assert c.supports_audio is False
-        assert c.max_videos == 4
-        assert 5 in c.valid_durations
-
-    def test_veo_3_model(self) -> None:
-        """Veo 3 モデルの制約を取得できることを検証."""
-        c = get_veo_constraints("veo-3.0-generate-001")
-        assert c is not None
-        assert c.supports_audio is True
-        assert c.max_videos == 4
-        assert "16:9" in c.valid_aspect_ratios
-        assert "9:16" in c.valid_aspect_ratios
-
     def test_veo_31_model(self) -> None:
         """Veo 3.1 モデルの制約を取得できることを検証."""
         c = get_veo_constraints("veo-3.1-generate-001")
@@ -355,15 +349,6 @@ class TestGetVeoConstraints:
         assert c.supports_audio is True
         assert c.max_videos == 4
         assert "9:16" in c.valid_aspect_ratios
-
-    def test_veo_31_preferred_over_30(self) -> None:
-        """veo-3.1 が veo-3.0 より優先的にマッチすることを検証."""
-        c31 = get_veo_constraints("veo-3.1-fast-generate-001")
-        c30 = get_veo_constraints("veo-3.0-fast-generate-001")
-        assert c31 is not None
-        assert c30 is not None
-        # veo-3.1 と veo-3.0 が別の制約オブジェクトにマッチすることを確認
-        assert c31 is not c30
 
     def test_veo_31_lite_model(self) -> None:
         """veo-3.1-lite が veo-3.1 制約に解決されることを検証."""

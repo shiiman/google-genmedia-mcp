@@ -21,7 +21,7 @@ Gemini モデルを使用した画像生成・編集。`generate_image` ツー�
 > **⚠️ Vertex AI のエンドポイント要件**: Gemini 3.x 系の 3 モデルは **global エンドポイント専用**です
 > （`us-central1` 等のリージョン指定では 404）。本サーバーは `global: true` の設定に従って自動で切り替えます。
 >
-> **⚠️ 廃止予定**: `gemini-2.5-flash-image` は **2026-10-02 に廃止**予定です。
+> **⚠️ 廃止予定**: `gemini-2.5-flash-image` は **2026-10-02 に廃止**予定でしたが、リリースノートでは **2026-10-16 へ延期**とされています（原文未確認）。
 > 唯一リージョンエンドポイントに対応するモデルのため、以降は global エンドポイントが必須になります。
 
 ### 主な機能
@@ -43,9 +43,6 @@ Gemini モデルを使用した画像生成・編集。`generate_image` ツー�
 | `veo-3.1-generate-001` | `Veo 3.1`, `veo-3.1` | 最新・高品質（**デフォルト**） | $0.35 / 秒 |
 | `veo-3.1-fast-generate-001` | `Veo 3.1 Fast`, `veo-3.1-fast` | 最新・高速 | $0.35 / 秒 |
 | `veo-3.1-lite-generate-001` | `Veo 3.1 Lite`, `veo-3.1-lite` | 最新・軽量 | $0.35 / 秒 |
-| `veo-3.0-generate-001` | `Veo 3`, `veo-3.0` | 高品質 | $0.35 / 秒 |
-| `veo-3.0-fast-generate-001` | `Veo 3 Fast`, `veo-3.0-fast` | 高速 | $0.35 / 秒 |
-| `veo-2.0-generate-001` | `Veo 2`, `veo-2.0` | 旧世代 | $0.35 / 秒 |
 
 > ※ 料金は生成された動画の秒数に応じた従量課金です。参考値のため最新の公式料金ページをご確認ください。
 
@@ -54,7 +51,7 @@ Gemini モデルを使用した画像生成・編集。`generate_image` ツー�
 - テキストから動画生成（Text-to-Video）
 - 画像から動画生成（Image-to-Video）
 - アスペクト比指定（16:9 / 9:16）
-- 動画長指定（5〜8 秒）
+- 動画長指定（4 / 6 / 8 秒）
 - 非同期ポーリング処理（生成に数分かかる場合あり）
 
 ---
@@ -159,7 +156,6 @@ model: "Nano Banana"        # -> gemini-2.5-flash-image
 model: "Veo 3.1"            # -> veo-3.1-generate-001
 model: "Veo 3.1 Fast"       # -> veo-3.1-fast-generate-001
 model: "Veo 3.1 Lite"       # -> veo-3.1-lite-generate-001
-model: "Veo 3"              # -> veo-3.0-generate-001
 model: "Lyria 3 Pro"        # -> lyria-3-pro-preview
 model: "Lyria 3 Clip"       # -> lyria-3-clip-preview
 model: "Lyria 2"            # -> lyria-002
