@@ -180,6 +180,11 @@ def _default_image_models() -> list[ModelEntry]:
     """
     return [
         ModelEntry(
+            id="gemini-nano-banana-2.1",
+            aliases=["Nano Banana 2.1", "nano-banana-2.1"],
+            global_=True,  # type: ignore[call-arg]
+        ),
+        ModelEntry(
             id="gemini-3.1-flash-image",
             aliases=["Nano Banana 2"],
             global_=True,  # type: ignore[call-arg]

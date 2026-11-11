@@ -44,7 +44,7 @@ class TestGenMediaConfig:
     def test_model_list_defaults(self) -> None:
         """models リストがデフォルトで設定されることを検証."""
         config = GenMediaConfig()
-        assert len(config.tools.generate_image.models) == 4  # Gemini のみ
+        assert len(config.tools.generate_image.models) == 5  # Gemini のみ
         assert len(config.tools.generate_video.models) == 3
         assert len(config.tools.generate_video_from_image.models) == 3
         assert len(config.tools.generate_music.models) == 3
@@ -109,6 +109,8 @@ class TestResolveModel:
         config = GenMediaConfig()
         assert config.tools.generate_image.resolve_model("Nano Banana") == "gemini-2.5-flash-image"
         assert config.tools.generate_image.resolve_model("Nano Banana 2") == "gemini-3.1-flash-image"
+        assert config.tools.generate_image.resolve_model("Nano Banana 2.1") == "gemini-nano-banana-2.1"
+        assert config.tools.generate_image.resolve_model("nano-banana-2.1") == "gemini-nano-banana-2.1"
 
     def test_resolve_by_id(self) -> None:
         """モデル ID で直接解決できることを検証."""
@@ -278,7 +280,7 @@ class TestToolsConfig:
     def test_models_in_each_tool(self) -> None:
         """各ツールにモデル定義が含まれることを検証."""
         config = GenMediaConfig()
-        assert len(config.tools.generate_image.models) == 4  # Gemini のみ
+        assert len(config.tools.generate_image.models) == 5  # Gemini のみ
         assert len(config.tools.generate_video.models) == 3
         assert len(config.tools.generate_video_from_image.models) == 3
         assert len(config.tools.generate_music.models) == 3
@@ -304,8 +306,8 @@ class TestToolsConfig:
         assert tc.generate_image.aspect_ratio == "9:16"
         # 上書きしていないフィールドはデフォルト値
         assert tc.generate_image.default_model == "Nano Banana 2"
-        # モデルリストもデフォルト値が維持される（Gemini のみ 4 件）
-        assert len(tc.generate_image.models) == 4
+        # モデルリストもデフォルト値が維持される（Gemini のみ 5 件）
+        assert len(tc.generate_image.models) == 5
         # 上書きしていないツールもデフォルト値
         assert tc.generate_video.aspect_ratio == "16:9"
 
@@ -380,6 +382,7 @@ class TestModelEntryGlobalFlag:
         config = GenMediaConfig()
         tool_cfg = config.tools.generate_image
         # Gemini 3.x モデルは global=True
+        assert tool_cfg.is_global_model("gemini-nano-banana-2.1") is True
         assert tool_cfg.is_global_model("gemini-3.1-flash-image") is True
         assert tool_cfg.is_global_model("gemini-3-pro-image") is True
         assert tool_cfg.is_global_model("gemini-3.1-flash-lite-image") is True

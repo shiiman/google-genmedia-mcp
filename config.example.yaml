@@ -37,6 +37,9 @@ tools:
     aspectRatio: "16:9"
     defaultModel: "Nano Banana 2"
     models:
+      - id: "gemini-nano-banana-2.1"
+        aliases: ["Nano Banana 2.1", "nano-banana-2.1"]
+        global: true  # Vertex AI ではグローバルエンドポイントが必要
       - id: "gemini-3.1-flash-image"
         aliases: ["Nano Banana 2"]
         global: true  # Vertex AI ではグローバルエンドポイントが必要
@@ -48,7 +51,7 @@ tools:
         global: true  # Vertex AI ではグローバルエンドポイントが必要
       - id: "gemini-2.5-flash-image"
         aliases: ["Nano Banana", "gemini-2.5-flash-preview-image-generation"]
-        # 廃止予定（2026-10-02 または 10-16 に延期とされる。公式リリースノート参照）。以降は global エンドポイント専用モデルのみ
+        # 廃止予定（2027-03-15。後継: gemini-3.1-flash-lite-image）。唯一リージョンエンドポイントに対応するモデルで、廃止後は global エンドポイント専用モデルのみ
 
   generateVideo:
     aspectRatio: "16:9"
