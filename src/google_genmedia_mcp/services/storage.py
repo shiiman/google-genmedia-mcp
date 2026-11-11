@@ -95,7 +95,7 @@ class StorageService:
             )
 
         try:
-            from google.cloud import storage as gcs_module
+            import google.cloud.storage as gcs_module
         except ImportError as e:
             raise StorageError(
                 "google-cloud-storage がインストールされていません",
