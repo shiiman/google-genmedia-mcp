@@ -49,7 +49,7 @@ Gemini モデルを使用した画像生成・編集。`generate_image` ツー�
 | `veo-3.1-lite-generate-001` | `Veo 3.1 Lite`, `veo-3.1-lite` | 最新・軽量 | $0.35 / 秒 |
 
 > **⚠️ 廃止予定**: `veo-3.1-generate-001` と `veo-3.1-fast-generate-001` は **2027-05-04 以降**に廃止予定です
-> （Google は後継に Gemini Omni `gemini-omni-1.2-flash` を指定。本サーバーは未対応）。
+> （Google は後継に Gemini Omni `gemini-omni-1.2-flash` を指定。後継は下記の [Gemini Omni](#gemini-omni動画生成編集) / `generate_video_omni` で利用できます）。
 > preview 系 Veo は 2026-10-22 に廃止済みで、本サーバーには含まれていません。
 
 > ※ 料金は生成された動画の秒数に応じた従量課金です。参考値のため最新の公式料金ページをご確認ください。
@@ -61,6 +61,30 @@ Gemini モデルを使用した画像生成・編集。`generate_image` ツー�
 - アスペクト比指定（16:9 / 9:16）
 - 動画長指定（4 / 6 / 8 秒）
 - 非同期ポーリング処理（生成に数分かかる場合あり）
+
+---
+
+## Gemini Omni（動画生成・編集）
+
+テキスト・画像・動画から、音声付きの動画を生成・編集・延長・アップスケールするモデル。`generate_video_omni` ツールで使用。
+Veo の後継として位置づけられていますが、**Vertex Interactions API（global エンドポイント専用）** という別 API で提供されるため、
+`generate_video` / `generate_video_from_image` ではなく専用ツールを使います。
+
+| モデル ID | エイリアス | 特徴 | 参考料金 (Vertex AI) |
+|-----------|-----------|------|---------------------|
+| `gemini-omni-1.2-flash` | `Omni`, `Omni 1.2`, `Gemini Omni 1.2 Flash`, `omni` | 動画生成・編集・延長・アップスケール（**デフォルト**） | 公式料金ページ参照 |
+
+| 仕様 | 内容 |
+|---|---|
+| 認証 | Vertex AI または OAuth（API Key 不可） |
+| 出力 | 動画（セリフ・BGM・効果音を含む MP4） |
+| 長さ | 3〜15 秒 |
+| 解像度 | 360p / 720p / 1080p / 4k |
+| アスペクト比 | 16:9 / 9:16 |
+| 入力 | 画像 最大 10 枚、動画 最大 3 本（ローカル 20MB まで・GCS は 30MB まで） |
+| 生成本数 | 1 回の呼び出しで 1〜3 本（逐次生成） |
+
+> `gemini-omni-1.1-flash-preview` 等の旧 preview 系は登録していません。
 
 ---
 
@@ -162,6 +186,7 @@ model: "Nano Banana 2"      # -> gemini-3.1-flash-image  ← デフォルト
 model: "Nano Banana Pro"    # -> gemini-3-pro-image
 model: "Nano Banana 2 Lite" # -> gemini-3.1-flash-lite-image
 model: "Nano Banana"        # -> gemini-2.5-flash-image
+model: "Omni"               # -> gemini-omni-1.2-flash (generate_video_omni)
 model: "Veo 3.1"            # -> veo-3.1-generate-001
 model: "Veo 3.1 Fast"       # -> veo-3.1-fast-generate-001
 model: "Veo 3.1 Lite"       # -> veo-3.1-lite-generate-001

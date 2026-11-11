@@ -39,6 +39,7 @@ def server_info() -> dict[str, Any]:
         phase2_tools = [
             "generate_speech",
             "generate_music",
+            "generate_video_omni",
             "combine_audio_video",
         ]
 
@@ -48,7 +49,7 @@ def server_info() -> dict[str, Any]:
         unavailable_tools = []
         if not has_cloud:
             # API Key 方式では Phase 2 の一部ツールが利用不可
-            unavailable_tools = ["generate_speech", "generate_music"]
+            unavailable_tools = ["generate_speech", "generate_music", "generate_video_omni"]
 
         # ツール別モデル・設定一覧
         speech_cfg = config.tools.generate_speech
@@ -68,6 +69,7 @@ def server_info() -> dict[str, Any]:
             "generate_video": _tool_models(config.tools.generate_video),
             "generate_video_from_image": _tool_models(config.tools.generate_video_from_image),
             "generate_music": _tool_models(config.tools.generate_music),
+            "generate_video_omni": _tool_models(config.tools.generate_video_omni),
         }
 
         # Chirp ボイス
@@ -104,7 +106,8 @@ def server_info() -> dict[str, Any]:
             "available_tools": available_tools,
             "unavailable_tools": unavailable_tools,
             "unavailable_reason": (
-                "generate_speech と generate_music は Vertex AI または OAuth 認証方式が必要です"
+                "generate_speech / generate_music / generate_video_omni は "
+                "Vertex AI または OAuth 認証方式が必要です"
                 if unavailable_tools
                 else None
             ),

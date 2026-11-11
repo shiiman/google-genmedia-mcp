@@ -1,6 +1,6 @@
 # ツール詳細仕様
 
-google-genmedia-mcp が提供する全 7 ツールの詳細仕様です。
+google-genmedia-mcp が提供する全 8 ツールの詳細仕様です。
 
 ---
 
@@ -11,6 +11,7 @@ google-genmedia-mcp が提供する全 7 ツールの詳細仕様です。
 | `generate_image` | ✅ | ✅ | ✅ |
 | `generate_video` | ✅ | ✅ | ✅ |
 | `generate_video_from_image` | ✅ | ✅ | ✅ |
+| `generate_video_omni` | ❌ | ✅ | ✅ |
 | `generate_speech` | ❌ | ✅ | ✅ |
 | `generate_music` | ❌ | ✅ | ✅ |
 | `combine_audio_video` | ✅ | ✅ | ✅ |
@@ -135,6 +136,87 @@ Veo モデルで画像から動画を生成します（Image-to-Video）。
 ### 戻り値
 
 `generate_video` と同じ形式。
+
+---
+
+## generate_video_omni
+
+Gemini Omni（`gemini-omni-1.2-flash`）で動画を生成・編集・延長・アップスケールします。音声（セリフ・BGM・効果音）付きの動画が生成されます。
+
+**注意**:
+- Vertex AI または OAuth 認証方式でのみ利用可能です（API Key 方式は不可）。
+- Vertex Interactions API（**global エンドポイント専用**）を同期呼び出しするため、完了まで数十秒〜数分かかる場合があります。
+- Veo とは別 API です。`generate_video` / `generate_video_from_image` では Omni を指定できません。
+- ローカル画像・動画は 20MB までインライン送信します。それ以上は GCS URI（`gs://`）で指定してください。
+- 生成した動画はレスポンスから直接ローカルに保存されます（Veo と異なり GCS への出力指定はありません）。
+
+### パラメータ
+
+| パラメータ | 型 | 必須 | デフォルト | 説明 |
+|-----------|-----|------|-----------|------|
+| `prompt` | string | △ | — | 生成・編集・延長の指示。`task=upscale` では指定不可、それ以外は必須 |
+| `task` | string | — | 自動判定 | `extend` / `upscale` / `reference_to_video`。省略時は入力から自動判定 |
+| `model` | string | — | `Omni` (`gemini-omni-1.2-flash`) | モデル名またはエイリアス |
+| `images` | string[] | — | — | 入力画像（最大 10 枚）。ローカルパスまたは `gs://` URI |
+| `videos` | string[] | — | — | 入力動画（最大 3 本）。ローカルパスまたは `gs://` URI |
+| `resolution` | string | — | モデル既定 | `360p` / `720p` / `1080p` / `4k` |
+| `aspect_ratio` | string | — | モデル既定 | `16:9` / `9:16` |
+| `duration_seconds` | integer | — | モデル既定 | 3〜15 秒 |
+| `sample_count` | integer | — | `1` | 生成本数（1〜3）。逐次生成のため本数分の時間と料金がかかる |
+| `temperature` | number | — | モデル既定 | 0.0〜2.0 |
+| `top_p` | number | — | モデル既定 | 0.0〜1.0 |
+
+`aspect_ratio` / `duration_seconds` / `resolution` は省略するとモデルの既定値が使われます（config の Veo 用デフォルトは適用されません）。
+
+### モード（`task` と入力の組み合わせ）
+
+| やりたいこと | `task` | `prompt` | `images` | `videos` |
+|---|---|---|---|---|
+| テキストから動画 | 省略 | 必須 | — | — |
+| 画像から動画（画像が最初のフレーム） | 省略 | 必須 | 1 枚 | — |
+| 最初と最後のフレームを指定 | 省略 | 必須 | 2 枚（指定順が最初→最後） | — |
+| 被写体・スタイル参照から動画 | `reference_to_video` | 必須 | 1 枚以上 | 不可 |
+| 動画の編集 | 省略 | 必須（編集指示） | — | 入力動画 |
+| 動画の延長（約 10 秒追加） | `extend` | 任意 | 不可 | ちょうど 1 本 |
+| 高解像度化 | `upscale`（`resolution` は `1080p` / `4k`） | **指定不可** | 不可 | ちょうど 1 本 |
+
+`extend` / `upscale` では `aspect_ratio` と `duration_seconds` は指定できません（出力は入力動画の構図に従います）。
+
+### 戻り値
+
+```json
+{
+  "videos": [
+    {
+      "file_path": "/path/to/output/omni_20241201_120000.mp4",
+      "model": "gemini-omni-1.2-flash",
+      "duration_seconds": 8.0
+    }
+  ],
+  "text": "モデルがテキストを返した場合のみ",
+  "model": "gemini-omni-1.2-flash"
+}
+```
+
+`duration_seconds` は指定した場合のみ値が入ります（未指定時は `null`）。
+
+### 使用例
+
+```
+# テキストから 8 秒の縦動画
+prompt: "雨上がりの渋谷スクランブル交差点、人々の足音と街の環境音"
+aspect_ratio: "9:16"
+duration_seconds: 8
+
+# 画像を最初のフレームにして動画化
+prompt: "カメラがゆっくり引いていく"
+images: ["/path/to/first.png"]
+
+# 動画を 4K にアップスケール（prompt は指定しない）
+task: "upscale"
+videos: ["gs://my-bucket/clip.mp4"]
+resolution: "4k"
+```
 
 ---
 
@@ -289,7 +371,7 @@ MCP サーバーの情報と利用可能なツール・モデルの一覧を返�
   "available_tools": [
     "generate_image", "generate_video", "generate_video_from_image",
     "server_info", "generate_speech",
-    "generate_music", "combine_audio_video"
+    "generate_music", "generate_video_omni", "combine_audio_video"
   ],
   "unavailable_tools": [],
   "unavailable_reason": null,
@@ -303,7 +385,8 @@ MCP サーバーの情報と利用可能なツール・モデルの一覧を返�
     },
     "generate_video": { "default_model": "Veo 3.1", "models": [...] },
     "generate_video_from_image": { "default_model": "Veo 3.1", "models": [...] },
-    "generate_music": { "default_model": "Lyria 3 Pro", "models": [...] }
+    "generate_music": { "default_model": "Lyria 3 Pro", "models": [...] },
+    "generate_video_omni": { "default_model": "Omni", "models": [...] }
   },
   "chirp": {
     "default_voice": "Kore",
@@ -339,4 +422,8 @@ MCP サーバーの情報と利用可能なツール・モデルの一覧を返�
 | `UNSUPPORTED_AUTH_METHOD` | 認証方式が対応していない |
 | `INVALID_GCS_URI` | GCS URI の形式が不正（`gs://` で始まっていない） |
 | `INVALID_PARAMETER` | パラメータの値が不正（アスペクト比、秒数等） |
+| `OMNI_API_ERROR` | Omni（Interactions API）がエラーを返した（HTTP エラー、生成失敗ステータス等） |
+| `OMNI_TIMEOUT` | Omni の API 呼び出しがタイムアウトした（`requestTimeout` で調整） |
+| `OMNI_NO_VIDEO` | Omni のレスポンスに動画が含まれていなかった（安全フィルタ等） |
+| `FILE_TOO_LARGE` | 入力ファイルが 20 MB を超えている（GCS URI で指定してください） |
 | `INTERNAL_ERROR` | 予期しない内部エラー |

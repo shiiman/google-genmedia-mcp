@@ -209,6 +209,7 @@ uvx --from git+https://github.com/shiiman/google-genmedia-mcp google-genmedia-mc
 |--------|------|------|
 | `generate_speech` | Chirp 3 HD でテキストを音声に変換 | Vertex AI / OAuth |
 | `generate_music` | Lyria で音楽を生成 | Vertex AI / OAuth |
+| `generate_video_omni` | Gemini Omni で動画を生成・編集・延長・アップスケール（音声付き） | Vertex AI / OAuth |
 | `combine_audio_video` | ffmpeg で動画と音声を合成 | 全方式 |
 
 ---

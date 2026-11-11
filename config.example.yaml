@@ -87,6 +87,16 @@ tools:
       pollInterval: 15
       pollTimeout: 600
 
+  # Gemini Omni（Vertex Interactions API・global 専用・Vertex AI / OAuth のみ）
+  # 動画の生成・編集・延長・アップスケール。生成は同期呼び出しで完了を待つ
+  generateVideoOmni:
+    defaultModel: "Omni"
+    requestTimeout: 600  # 1 回の API 呼び出しのタイムアウト（秒）
+    models:
+      - id: "gemini-omni-1.2-flash"
+        aliases: ["Omni", "Omni 1.2", "Gemini Omni 1.2 Flash", "omni"]
+        global: true  # Interactions API は global エンドポイント専用
+
   generateSpeech:
     audioEncoding: "mp3"
     defaultVoice: "Kore"

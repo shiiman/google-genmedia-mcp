@@ -124,6 +124,45 @@ def get_veo_constraints(model_id: str) -> VeoModelConstraints | None:
     return None
 
 
+class OmniModelConstraints(BaseModel):
+    """Gemini Omni モデル固有の制約."""
+
+    min_duration: int
+    max_duration: int
+    valid_resolutions: list[str]
+    valid_aspect_ratios: list[str]
+    supported_tasks: list[str]
+
+
+# Omni で明示指定できるタスク（それ以外はプロンプトと入力から自動判定される）
+OMNI_TASK_EXTEND = "extend"
+OMNI_TASK_UPSCALE = "upscale"
+OMNI_TASK_REFERENCE_TO_VIDEO = "reference_to_video"
+
+OMNI_MAX_SAMPLE_COUNT = 3
+
+OMNI_MODEL_CONSTRAINTS: dict[str, OmniModelConstraints] = {
+    "gemini-omni-1.2": OmniModelConstraints(
+        min_duration=3,
+        max_duration=15,
+        valid_resolutions=["360p", "720p", "1080p", "4k"],
+        valid_aspect_ratios=["16:9", "9:16"],
+        supported_tasks=[OMNI_TASK_EXTEND, OMNI_TASK_UPSCALE, OMNI_TASK_REFERENCE_TO_VIDEO],
+    ),
+}
+
+
+def get_omni_constraints(model_id: str) -> OmniModelConstraints | None:
+    """モデル ID からプレフィックスベースで Omni 制約を取得する.
+
+    長いプレフィックスから順にマッチさせる。
+    """
+    for prefix in sorted(OMNI_MODEL_CONSTRAINTS, key=len, reverse=True):
+        if model_id.startswith(prefix):
+            return OMNI_MODEL_CONSTRAINTS[prefix]
+    return None
+
+
 # ===== モデル解決ユーティリティ =====
 
 
@@ -220,6 +259,20 @@ def _default_veo_models() -> list[ModelEntry]:
         ModelEntry(
             id="veo-3.1-lite-generate-001",
             aliases=["Veo 3.1 Lite", "veo-3.1-lite"],
+        ),
+    ]
+
+
+def _default_omni_models() -> list[ModelEntry]:
+    """Gemini Omni モデルのデフォルト定義.
+
+    Omni は Vertex Interactions API（global エンドポイント専用）で提供される。
+    """
+    return [
+        ModelEntry(
+            id="gemini-omni-1.2-flash",
+            aliases=["Omni", "Omni 1.2", "Gemini Omni 1.2 Flash", "omni"],
+            global_=True,  # type: ignore[call-arg]
         ),
     ]
 
@@ -351,6 +404,23 @@ class GenerateVideoFromImageToolConfig(BaseModel):
         )
 
 
+class GenerateVideoOmniToolConfig(BaseModel):
+    """generate_video_omni ツール設定."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    default_model: str = Field(default="Omni", alias="defaultModel")
+    models: list[ModelEntry] = Field(default_factory=_default_omni_models)
+    request_timeout: int = Field(default=600, alias="requestTimeout")
+
+    def resolve_model(self, model: str | None, category_name: str = "Omni モデル") -> str:
+        """モデル名またはエイリアスを正式モデル ID に解決する."""
+        return _resolve_model(
+            model, self.default_model, self.models,
+            False, category_name,
+        )
+
+
 class GenerateSpeechToolConfig(BaseModel):
     """generate_speech ツール設定（Chirp TTS ボイス設定含む）."""
 
@@ -394,6 +464,9 @@ class ToolsConfig(BaseModel):
     generate_video_from_image: GenerateVideoFromImageToolConfig = Field(
         default_factory=GenerateVideoFromImageToolConfig,
         alias="generateVideoFromImage",
+    )
+    generate_video_omni: GenerateVideoOmniToolConfig = Field(
+        default_factory=GenerateVideoOmniToolConfig, alias="generateVideoOmni"
     )
     generate_speech: GenerateSpeechToolConfig = Field(
         default_factory=GenerateSpeechToolConfig, alias="generateSpeech"

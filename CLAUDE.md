@@ -57,6 +57,7 @@ tools:
   generateImage:    # defaultModel, aspectRatio, allowUnregistered, models
   generateVideo:    # defaultModel, aspectRatio, durationSeconds, numberOfVideos, models, polling
   generateVideoFromImage:  # defaultModel, aspectRatio, durationSeconds, models, polling
+  generateVideoOmni:  # defaultModel, models, requestTimeout
   generateSpeech:   # audioEncoding, defaultVoice, defaultLanguage, voices
   generateMusic:    # defaultModel, models
 ```
@@ -96,8 +97,9 @@ All tools are defined in `src/google_genmedia_mcp/mcp/tools/`.
 - `generate_video_from_image`: Image-to-video with Veo models (GCS URI required)
 - `server_info`: Server status, available tools/models, config diagnostics
 
-### Audio & Utility (vertex_ai/oauth only for audio)
+### Audio, Omni & Utility (vertex_ai/oauth only for audio and Omni)
 
 - `generate_speech`: Text-to-speech with Chirp 3 HD (requires vertex_ai/oauth)
 - `generate_music`: Music generation with Lyria (requires vertex_ai/oauth)
+- `generate_video_omni`: Video generation/editing/extension/upscale with Gemini Omni via the Vertex Interactions API (requires vertex_ai/oauth; global endpoint only; called over REST with an authorized session, not the genai SDK)
 - `combine_audio_video`: Combine video and audio with ffmpeg (all auth methods)

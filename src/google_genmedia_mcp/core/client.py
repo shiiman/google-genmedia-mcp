@@ -25,6 +25,7 @@ class GenMediaClient:
         self._genai_global_client: Any | None = None
         self._tts_client: Any | None = None
         self._aiplatform_client: Any | None = None
+        self._authorized_session: Any | None = None
         self._auth_manager_instance: Any | None = None
 
     @property
@@ -68,6 +69,16 @@ class GenMediaClient:
         if self._aiplatform_client is None:
             self._aiplatform_client = self._auth_manager.create_aiplatform_client(self._config)
         return self._aiplatform_client
+
+    @property
+    def authorized_session(self) -> Any:
+        """Vertex AI REST API 用の認証済み HTTP セッション（遅延初期化）.
+
+        Interactions API（Omni）など SDK を介さず REST で呼び出す API で使用する。
+        """
+        if self._authorized_session is None:
+            self._authorized_session = self._auth_manager.create_authorized_session(self._config)
+        return self._authorized_session
 
     @property
     def has_cloud_credentials(self) -> bool:

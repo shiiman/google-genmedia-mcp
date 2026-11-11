@@ -72,7 +72,7 @@ cp config.example.yaml ~/.google-genmedia-mcp/config.yaml
 Google AI Studio で API Key を取得し、設定ファイルに記載します。
 
 **対応ツール**: `generate_image`, `generate_video`, `generate_video_from_image`, `combine_audio_video`, `server_info`
-**非対応**: `generate_speech`, `generate_music`（Cloud 認証情報が必要）
+**非対応**: `generate_speech`, `generate_music`, `generate_video_omni`（Cloud 認証情報が必要）
 
 **設定例**:
 
