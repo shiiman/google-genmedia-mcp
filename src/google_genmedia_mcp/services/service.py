@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from .chirp import ChirpService
     from .gemini_image import GeminiImageService
     from .lyria import LyriaService
+    from .omni import OmniService
     from .storage import StorageService
     from .veo import VeoService
 
@@ -34,6 +35,7 @@ class GenMediaService:
         self._veo_instance: VeoService | None = None
         self._chirp_instance: ChirpService | None = None
         self._lyria_instance: LyriaService | None = None
+        self._omni_instance: OmniService | None = None
         self._avtool_instance: AvToolService | None = None
 
     @property
@@ -84,6 +86,14 @@ class GenMediaService:
             from .lyria import LyriaService
             self._lyria_instance = LyriaService(self.client, self._config, self.storage)
         return self._lyria_instance
+
+    @property
+    def omni(self) -> OmniService:
+        """Omni 動画生成サービスを返す（遅延初期化）."""
+        if self._omni_instance is None:
+            from .omni import OmniService
+            self._omni_instance = OmniService(self.client, self._config, self.storage)
+        return self._omni_instance
 
     @property
     def avtool(self) -> AvToolService:

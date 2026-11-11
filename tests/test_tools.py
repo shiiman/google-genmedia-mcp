@@ -491,3 +491,119 @@ class TestPromptPrefixIntegration:
         call_args = service_mock.gemini_image.generate.call_args
         assert call_args.kwargs["prompt"] == "テスト画像"
 
+
+
+# ===== generate_video_omni ツール =====
+
+
+class TestGenerateVideoOmniTool:
+    """generate_video_omni ツールのテスト."""
+
+    def _call(self, service_mock: MagicMock, **kwargs: object) -> dict:  # type: ignore[type-arg]
+        with patch(
+            "google_genmedia_mcp.mcp.tools._utils.get_service",
+            return_value=service_mock,
+        ), patch(
+            "google_genmedia_mcp.mcp.tools.omni.get_service",
+            return_value=service_mock,
+        ):
+            from google_genmedia_mcp.mcp.tools.omni import generate_video_omni
+
+            return generate_video_omni(**kwargs)  # type: ignore[arg-type,no-any-return]
+
+    def test_success_passes_all_arguments(self) -> None:
+        """全引数がサービスへ渡され、結果が辞書で返ることを検証."""
+        service_mock = _make_service_mock()
+        service_mock.omni.generate.return_value = _make_video_result()
+
+        result = self._call(
+            service_mock,
+            prompt="夕焼けの海",
+            task="reference_to_video",
+            model="Omni",
+            images=["gs://b/a.png"],
+            videos=None,
+            resolution="720p",
+            aspect_ratio="9:16",
+            duration_seconds=5,
+            sample_count=2,
+            temperature=0.7,
+            top_p=0.9,
+        )
+
+        kwargs = service_mock.omni.generate.call_args.kwargs
+        assert kwargs["prompt"] == "夕焼けの海"
+        assert kwargs["task"] == "reference_to_video"
+        assert kwargs["images"] == ["gs://b/a.png"]
+        assert kwargs["resolution"] == "720p"
+        assert kwargs["aspect_ratio"] == "9:16"
+        assert kwargs["duration_seconds"] == 5
+        assert kwargs["sample_count"] == 2
+        assert kwargs["temperature"] == 0.7
+        assert kwargs["top_p"] == 0.9
+        assert result["videos"][0]["file_path"] == "/tmp/video.mp4"
+
+    def test_prefix_applied_to_prompt(self) -> None:
+        """prompt.prefix が prompt に適用されることを検証."""
+        service_mock = _make_service_mock()
+        service_mock.config = GenMediaConfig.model_validate({"prompt": {"prefix": "日本語で出力。"}})
+        service_mock.omni.generate.return_value = _make_video_result()
+
+        self._call(service_mock, prompt="テスト動画")
+
+        assert service_mock.omni.generate.call_args.kwargs["prompt"] == "日本語で出力。\nテスト動画"
+
+    def test_prefix_not_applied_without_prompt(self) -> None:
+        """prompt 省略（upscale 等）では prefix を付与しないことを検証."""
+        service_mock = _make_service_mock()
+        service_mock.config = GenMediaConfig.model_validate({"prompt": {"prefix": "日本語で出力。"}})
+        service_mock.omni.generate.return_value = _make_video_result()
+
+        self._call(service_mock, task="upscale", videos=["gs://b/v.mp4"])
+
+        assert service_mock.omni.generate.call_args.kwargs["prompt"] is None
+
+    def test_genmedia_error_returns_error_dict(self) -> None:
+        """GenMediaError が error 辞書に変換されることを検証."""
+        service_mock = _make_service_mock()
+        service_mock.omni.generate.side_effect = GenMediaError("失敗", "OMNI_API_ERROR", "確認して")
+
+        result = self._call(service_mock, prompt="p")
+
+        assert result == {"error": "失敗", "code": "OMNI_API_ERROR", "hint": "確認して"}
+
+    def test_unexpected_error_hides_details(self) -> None:
+        """予期しない例外は内部エラーとして詳細を隠すことを検証."""
+        service_mock = _make_service_mock()
+        service_mock.omni.generate.side_effect = RuntimeError("secret detail")
+
+        result = self._call(service_mock, prompt="p")
+
+        assert result == {"error": "内部エラーが発生しました", "code": "INTERNAL_ERROR"}
+
+
+class TestServerInfoOmni:
+    """server_info に Omni が反映されることのテスト."""
+
+    def _info(self, *, has_cloud: bool) -> dict:  # type: ignore[type-arg]
+        service_mock = _make_service_mock()
+        service_mock.has_cloud_credentials = has_cloud
+        with patch(
+            "google_genmedia_mcp.mcp.tools.server_info.get_service",
+            return_value=service_mock,
+        ):
+            from google_genmedia_mcp.mcp.tools.server_info import server_info
+
+            return server_info()  # type: ignore[no-any-return]
+
+    def test_omni_listed_with_models(self) -> None:
+        info = self._info(has_cloud=True)
+        assert "generate_video_omni" in info["available_tools"]
+        assert info["unavailable_tools"] == []
+        omni = info["tools_models"]["generate_video_omni"]
+        assert omni["default_model"] == "Omni"
+        assert omni["models"][0]["id"] == "gemini-omni-1.2-flash"
+
+    def test_omni_unavailable_with_api_key(self) -> None:
+        info = self._info(has_cloud=False)
+        assert "generate_video_omni" in info["unavailable_tools"]

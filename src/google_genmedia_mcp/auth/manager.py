@@ -157,6 +157,27 @@ class AuthManager:
             client_options=client_options,
         )
 
+    def create_authorized_session(self, config: GenMediaConfig) -> Any:
+        """認証済みの HTTP セッション（requests ベース）を作成する.
+
+        REST で直接呼び出す API（Vertex Interactions API 等）で使用する。
+        API Key 方式では Vertex AI の REST API を呼べないため AuthError を送出する。
+
+        Raises:
+            AuthError: API Key 方式、または未知の認証方式の場合
+        """
+        from google.auth.transport.requests import AuthorizedSession
+
+        from ..core.errors import AuthError
+
+        if config.auth.method not in ("vertex_ai", "oauth"):
+            raise AuthError(
+                f"認証方式 {config.auth.method} では Vertex AI の REST API を呼び出せません",
+                "AUTH_NOT_SUPPORTED",
+                hint="config.yaml の auth.method を vertex_ai または oauth に設定してください",
+            )
+        return AuthorizedSession(self._get_cloud_credentials(config))  # type: ignore[no-untyped-call]
+
     def _load_oauth_credentials(self, config: GenMediaConfig) -> Any:
         """OAuth トークンファイルから credentials を読み込む."""
         from .oauth import OAuthManager
